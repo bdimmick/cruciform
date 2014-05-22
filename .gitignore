@@ -16,3 +16,7 @@ project/plugins/project/
 .scala_dependencies
 .worksheet
 /bin
+
+# IntelliJ specific
+.idea/
+project/
