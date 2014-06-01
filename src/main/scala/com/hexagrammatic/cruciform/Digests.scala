@@ -1,6 +1,5 @@
 package com.hexagrammatic.cruciform
 
-import java.io.ByteArrayInputStream
 import java.io.FilterInputStream
 import java.io.InputStream
 import java.security.DigestInputStream
@@ -10,6 +9,7 @@ import java.security.Provider
 
 import javax.crypto.Mac
 
+import StreamUtils.FunctionFilterStream
 
 object Digests {
 
@@ -54,26 +54,13 @@ object Digests {
     }
 
     mac.init(key)
-    handler(new HMACInputStream(StreamUtils.toStream(data), mac))
+
+    handler(
+      new FunctionFilterStream(
+        StreamUtils.toStream(data),
+        (b: Byte) => mac.update(b),
+        Option((a: Array[Byte], off: Int, len: Int) => mac.update(a, off, len))))
+
     mac.doFinal
-  }
-
-  private class HMACInputStream(in: InputStream, hmac: Mac) extends FilterInputStream(in) {
-
-    override def read: Int = {
-      val ch = in.read()
-      if (ch != -1) {
-        hmac.update(ch.byteValue)
-      }
-      ch
-    }
-
-    override def read(b: Array[Byte], off: Int, len: Int): Int = {
-      val result = in.read(b, off, len)
-      if (result > 0) {
-        hmac.update(b, off, result)
-      }
-      result
-    }
   }
 }

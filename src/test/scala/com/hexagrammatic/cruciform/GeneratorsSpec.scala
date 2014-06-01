@@ -9,7 +9,7 @@ import java.security.InvalidParameterException
 import java.security.NoSuchAlgorithmException
 
 
-class GeneratorSpec extends FlatSpec with Matchers {
+class GeneratorsSpec extends FlatSpec with Matchers {
 
   "Key generator" should "be able to generate a key with no params" in {
     val generator = new SymmetricKeyGenerator()

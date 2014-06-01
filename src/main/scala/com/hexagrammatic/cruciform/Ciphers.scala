@@ -3,48 +3,63 @@ package com.hexagrammatic.cruciform
 import StreamUtils._
 
 import java.io.InputStream
-import java.security.Key
-import java.security.KeyPair
-import java.security.PrivateKey
-import java.security.Provider
-import java.security.PublicKey
+import java.io.IOException
+import java.security._
 import java.security.cert.Certificate
-import java.security.spec.AlgorithmParameterSpec
 
 import javax.crypto.Cipher
 import javax.crypto.CipherInputStream
 import javax.crypto.spec.IvParameterSpec
+import scala.Some
 
 
 object Ciphers {
 
-  private val algorithmsToTransforms = Map(
+  private val cipherForKeyType = Map(
     "AES" -> "AES/CBC/PKCS5Padding",
     "DES" -> "DES/CBC/PKCS5Padding",
     "RSA" -> "RSA/ECB/PKCS1Padding")
 
-  class TranformationNotFound(m: String) extends Exception(m)
+  private val signatureForKeyType = Map(
+    "RSA" -> "SHA256withRSA",
+    "DSA" -> "SHA1withDSA")
 
-  private val transformationNotFound = (a: String) => {
-    throw new TranformationNotFound(s"Transformation not found for algorithm $a.")
+  private val algorithmNotFound = (a: String) => {
+    throw new NoSuchAlgorithmException(s"Cipher not found for key algorithm $a.")
   }
 
-  private def findTransformation(transformation: Option[String], algorithm: String): String =
-    transformation.getOrElse(algorithmsToTransforms.getOrElse(algorithm, transformationNotFound(algorithm)))
+  private def findAlgorithm(algorithm: Option[String], keyAlgorithm: String, map: Map[String, String]): String =
+    algorithm.getOrElse(map.getOrElse(keyAlgorithm, algorithmNotFound(keyAlgorithm)))
 
   private def createCipher(
-    transformation: Option[String],
-    algorithm: String,
+    algorithm: Option[String],
+    keyAlgorithm: String,
     provider: Option[Any] = None): Cipher = {
 
     provider match {
       case Some(value) => {
         value match {
-          case p: Provider => Cipher.getInstance(findTransformation(transformation, algorithm), p)
-          case s => Cipher.getInstance(findTransformation(transformation, algorithm), s.toString)
+          case p: Provider => Cipher.getInstance(findAlgorithm(algorithm, keyAlgorithm, cipherForKeyType), p)
+          case s => Cipher.getInstance(findAlgorithm(algorithm, keyAlgorithm, cipherForKeyType), s.toString)
         }
       }
-      case None => Cipher.getInstance(findTransformation(transformation, algorithm))
+      case None => Cipher.getInstance(findAlgorithm(algorithm, keyAlgorithm, cipherForKeyType))
+    }
+  }
+
+  private def createSignature(
+    algorithm: Option[String],
+    keyAlgorithm: String,
+    provider: Option[Any] = None): Signature = {
+
+    provider match {
+      case Some(value) => {
+        value match {
+          case p: Provider => Signature.getInstance(findAlgorithm(algorithm, keyAlgorithm, signatureForKeyType), p)
+          case s => Signature.getInstance(findAlgorithm(algorithm, keyAlgorithm, signatureForKeyType), s.toString)
+        }
+      }
+      case None => Signature.getInstance(findAlgorithm(algorithm, keyAlgorithm, signatureForKeyType))
     }
   }
 
@@ -53,16 +68,16 @@ object Ciphers {
     key: Any,
     streamHandler: (InputStream) => Unit,
     initVectorHandler: Option[(Array[Byte]) => Unit] = None,
-    transformation: Option[String] = None,
-    provider: Option[Any] = None) {
+    algorithm: Option[String] = None,
+    provider: Option[Any] = None): Unit = {
 
-    val alg = key match {
+    val keyalg = key match {
       case k: Key => k.getAlgorithm
       case c: Certificate => c.getPublicKey.getAlgorithm
       case kp: Keypair => kp.algorithm
     }
 
-    val cipher = createCipher(transformation, alg, provider)
+    val cipher = createCipher(algorithm, keyalg, provider)
 
     key match {
       case k: Key => cipher.init(Cipher.ENCRYPT_MODE, k)
@@ -70,7 +85,7 @@ object Ciphers {
       case kp: Keypair => cipher.init(Cipher.ENCRYPT_MODE, kp.publicKey)
     }
 
-    if (cipher.getIV() != null) {
+    if (cipher.getIV != null) {
       initVectorHandler match {
         case Some(handler) => handler(cipher.getIV)
         case None => throw new IllegalArgumentException()
@@ -85,15 +100,15 @@ object Ciphers {
     key: Any,
     streamHandler: (InputStream) => Unit,
     initVector: Option[Array[Byte]] = None,
-    transformation: Option[String] = None,
-    provider: Option[Any] = None) {
+    algorithm: Option[String] = None,
+    provider: Option[Any] = None): Unit = {
 
-    val alg = key match {
+    val keyalg = key match {
       case k: Key => k.getAlgorithm
       case kp: Keypair => kp.algorithm
     }
 
-    val cipher = createCipher(transformation, alg, provider)
+    val cipher = createCipher(algorithm, keyalg, provider)
 
     val spec = initVector match {
       case Some(iv) => new IvParameterSpec(iv)
@@ -108,12 +123,67 @@ object Ciphers {
     streamHandler(new CipherInputStream(toStream(data), cipher))
   }
 
-  def sign(data: Any, key: PrivateKey): Array[Byte] = {
-    Array[Byte]()
+  def sign(
+    data: Any,
+    key: Any,
+    streamHandler: (InputStream) => Unit = StreamUtils.noopHandler,
+    algorithm: Option[String] = None,
+    provider: Option[Any] = None): Array[Byte] = {
+
+    val keyalg = key match {
+      case k: PrivateKey => k.getAlgorithm
+      case kp: Keypair => kp.algorithm
+    }
+
+    val signer = createSignature(algorithm, keyalg, provider)
+
+    key match {
+      case k: PrivateKey => signer.initSign(k)
+      case kp: Keypair => signer.initSign(kp.privateKey)
+    }
+
+    streamHandler(new FunctionFilterStream(
+      toStream(data),
+      (b: Byte) => signer.update(b),
+      Option((a: Array[Byte], off: Int, len: Int) => signer.update(a, off, len))
+    ))
+
+    signer.sign
   }
 
-  def verify(data: Any, key: PublicKey, signature: Array[Byte]): Boolean = {
-    false
-  }
+  def verify(
+    data: Any,
+    key: Any,
+    signature: Array[Byte],
+    streamHandler: (InputStream) => Unit = StreamUtils.noopHandler,
+    algorithm: Option[String] = None,
+    provider: Option[Any] = None): Boolean = {
 
+    val keyalg = key match {
+      case k: PrivateKey => k.getAlgorithm
+      case kp: Keypair => kp.algorithm
+    }
+
+    val signer = createSignature(algorithm, keyalg, provider)
+
+    key match {
+      case k: PublicKey => signer.initVerify(k)
+      case c: Certificate => signer.initVerify(c)
+      case kp: Keypair => signer.initVerify(kp.publicKey)
+    }
+
+    streamHandler(new FunctionFilterStream(
+      toStream(data),
+      (b: Byte) => signer.update(b),
+      Option((a: Array[Byte], off: Int, len: Int) => signer.update(a, off, len))
+    ))
+
+    try {
+      signer.verify(signature)
+    } catch {
+      case ex: SignatureException => false
+    }
+  }
 }
+
+//case class Signature() extends Serializable

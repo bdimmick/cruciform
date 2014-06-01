@@ -1,7 +1,6 @@
 package com.hexagrammatic.cruciform
 
 import java.security.Key
-import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.Provider
 
@@ -65,11 +64,11 @@ class AsymmetricKeyGenerator(
   provider: Option[Any] = None) {
 
   private val generator = provider match {
-    case None => java.security.KeyPairGenerator.getInstance(algorithm)
+    case None => KeyPairGenerator.getInstance(algorithm)
     case Some(value) => {
       value match {
-        case p: Provider => java.security.KeyPairGenerator.getInstance(algorithm, p)
-        case str => java.security.KeyPairGenerator.getInstance(algorithm, str.toString)
+        case p: Provider => KeyPairGenerator.getInstance(algorithm, p)
+        case str => KeyPairGenerator.getInstance(algorithm, str.toString)
       }
     }
   }
