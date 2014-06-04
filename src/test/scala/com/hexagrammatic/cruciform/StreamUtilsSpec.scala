@@ -7,6 +7,7 @@ import java.io._
 import org.apache.commons.io.input.CountingInputStream
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
+import java.util.concurrent.atomic.AtomicInteger
 
 class StreamUtilsSpec extends FlatSpec with Matchers {
 
@@ -99,6 +100,33 @@ class StreamUtilsSpec extends FlatSpec with Matchers {
       case s: TestSerializable => (s) should equal (serialized)
     }
   }
+
+  "Stream utils" should "be able to provide a default buffer handler for a functional stream" in {
+    val data = "Hello World".getBytes
+    val count = new AtomicInteger(0)
+    val f = (b: Byte) => { count.incrementAndGet }
+    val out = new ByteArrayOutputStream
+
+    copyHandler(out)(new FunctionFilterStream(toStream(data), f))
+
+    (count.get) should equal (data.length)
+  }
+
+  "Stream utils" should "be able to utilize a buffer handler for a functional stream" in {
+    val data = "Hello World".getBytes
+    val byteUseCount = new AtomicInteger(0)
+    val bufferUseCount = new AtomicInteger(0)
+    val byteFunc = (b: Byte) => { byteUseCount.incrementAndGet }
+    val bufferFunc = (buf: Array[Byte], off: Int, len: Int) => { bufferUseCount.incrementAndGet }
+
+    val out = new ByteArrayOutputStream
+
+    copyHandler(out)(new FunctionFilterStream(toStream(data), byteFunc, Option(bufferFunc)))
+
+    (byteUseCount.get) should equal (0)
+    (bufferUseCount.get) should be > (0)
+  }
+
 }
 
 // Used to test serialization abilities of toStream -

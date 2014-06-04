@@ -47,13 +47,13 @@ object StreamUtils {
     }
   }
 
-  def makeBufferHandler(f:(Byte => Unit))(buf: Array[Byte], off: Int, len: Int) =
+  def makeBufferHandler(f:(Byte => Any))(buf: Array[Byte], off: Int, len: Int) =
     buf.slice(off, off + len).foreach(f)
 
   class FunctionFilterStream(
     in: InputStream,
-    byteHandler: (Byte) => Unit,
-    bufferHandler: Option[(Array[Byte], Int, Int) => Unit] = None)
+    byteHandler: (Byte) => Any,
+    bufferHandler: Option[(Array[Byte], Int, Int) => Any] = None)
     extends FilterInputStream(in) {
 
     override def read: Int = {
