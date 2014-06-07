@@ -26,7 +26,7 @@ class CiphersSpec extends FlatSpec with Matchers with MockFactory {
       ivStream.write(iv)
     } 
     
-    encrypt(data, key, copyHandler(ciphertext), Option(ivHandler))
+    encrypt(data, key, copyHandler(ciphertext), ivHandler)
     decrypt(ciphertext.toByteArray, key, copyHandler(plaintext), Option(ivStream.toByteArray))
     
     data.getBytes should not equal (ciphertext.toByteArray)
@@ -58,7 +58,7 @@ class CiphersSpec extends FlatSpec with Matchers with MockFactory {
       ivStream.write(iv)
     } 
     
-    encrypt(data, key, copyHandler(ciphertext), Option(ivHandler))
+    encrypt(data, key, copyHandler(ciphertext), ivHandler)
     decrypt(ciphertext.toByteArray, key, copyHandler(plaintext), Option(ivStream.toByteArray))
     
     data.getBytes should not equal (ciphertext.toByteArray)

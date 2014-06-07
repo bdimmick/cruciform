@@ -11,6 +11,7 @@ import javax.crypto.Cipher
 import javax.crypto.CipherInputStream
 import javax.crypto.spec.IvParameterSpec
 import scala.Some
+import java.util.concurrent.atomic.AtomicReference
 
 
 object Ciphers {
@@ -24,12 +25,15 @@ object Ciphers {
     "RSA" -> "SHA256withRSA",
     "DSA" -> "SHA1withDSA")
 
-  private val algorithmNotFound = (a: String) => {
-    throw new NoSuchAlgorithmException(s"Cipher not found for key algorithm $a.")
-  }
+  private def noopIVHandler(iv: Array[Byte]): Any = {}
 
   private def findAlgorithm(algorithm: Option[String], keyAlgorithm: String, map: Map[String, String]): String =
-    algorithm.getOrElse(map.getOrElse(keyAlgorithm, algorithmNotFound(keyAlgorithm)))
+    algorithm.getOrElse(
+      map.getOrElse(
+        keyAlgorithm,
+        throw new NoSuchAlgorithmException(s"Cipher not found for key algorithm $keyAlgorithm.")
+      )
+    )
 
   private def createCipher(
     algorithm: Option[String],
@@ -66,8 +70,8 @@ object Ciphers {
   def encrypt(
     data: Any,
     key: Any,
-    streamHandler: (InputStream) => Unit,
-    initVectorHandler: Option[(Array[Byte]) => Unit] = None,
+    streamHandler: (InputStream) => Any,
+    initVectorHandler: (Array[Byte]) => Any = noopIVHandler,
     algorithm: Option[String] = None,
     provider: Option[Any] = None): Unit = {
 
@@ -85,12 +89,7 @@ object Ciphers {
       case kp: Keypair => cipher.init(Cipher.ENCRYPT_MODE, kp.publicKey)
     }
 
-    if (cipher.getIV != null) {
-      initVectorHandler match {
-        case Some(handler) => handler(cipher.getIV)
-        case None => throw new IllegalArgumentException()
-      }
-    }
+    if (cipher.getIV != null) initVectorHandler(cipher.getIV)
 
     streamHandler(new CipherInputStream(toStream(data), cipher))
   }
@@ -142,11 +141,13 @@ object Ciphers {
       case kp: Keypair => signer.initSign(kp.privateKey)
     }
 
-    streamHandler(new FunctionFilterStream(
-      toStream(data),
-      (b: Byte) => signer.update(b),
-      Option((a: Array[Byte], off: Int, len: Int) => signer.update(a, off, len))
-    ))
+    streamHandler(
+      new FunctionFilterStream(
+        toStream(data),
+        (b: Byte) => signer.update(b),
+        Option((a: Array[Byte], off: Int, len: Int) => signer.update(a, off, len))
+      )
+    )
 
     signer.sign
   }
@@ -172,11 +173,13 @@ object Ciphers {
       case kp: Keypair => signer.initVerify(kp.publicKey)
     }
 
-    streamHandler(new FunctionFilterStream(
-      toStream(data),
-      (b: Byte) => signer.update(b),
-      Option((a: Array[Byte], off: Int, len: Int) => signer.update(a, off, len))
-    ))
+    streamHandler(
+      new FunctionFilterStream(
+        toStream(data),
+        (b: Byte) => signer.update(b),
+        Option((a: Array[Byte], off: Int, len: Int) => signer.update(a, off, len))
+      )
+    )
 
     try {
       signer.verify(signature)
