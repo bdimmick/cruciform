@@ -127,6 +127,14 @@ object Ciphers {
     streamHandler(new CipherInputStream(toStream(data), cipher))
   }
 
+  private def makeSigningFilterStream(data: Any, signer: Signature): FunctionFilterStream = {
+    new FunctionFilterStream(
+      toStream(data),
+      (b: Byte) => signer.update(b),
+      Option((a: Array[Byte], off: Int, len: Int) => signer.update(a, off, len))
+    )
+  }
+
   def sign(
     data: Any,
     key: Any,
@@ -147,13 +155,7 @@ object Ciphers {
       }
     }
 
-    streamHandler(
-      new FunctionFilterStream(
-        toStream(data),
-        (b: Byte) => signer.update(b),
-        Option((a: Array[Byte], off: Int, len: Int) => signer.update(a, off, len))
-      )
-    )
+    streamHandler(makeSigningFilterStream(data, signer))
 
     signer.sign
   }
@@ -184,13 +186,7 @@ object Ciphers {
       }
     }
 
-    streamHandler(
-      new FunctionFilterStream(
-        toStream(data),
-        (b: Byte) => signer.update(b),
-        Option((a: Array[Byte], off: Int, len: Int) => signer.update(a, off, len))
-      )
-    )
+    streamHandler(makeSigningFilterStream(data, signer))
 
     try {
       signer.verify(signature)
@@ -199,5 +195,3 @@ object Ciphers {
     }
   }
 }
-
-//case class Signature() extends Serializable
