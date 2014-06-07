@@ -75,18 +75,22 @@ object Ciphers {
     algorithm: Option[String] = None,
     provider: Option[Any] = None): Unit = {
 
-    val keyalg = key match {
-      case k: Key => k.getAlgorithm
-      case c: Certificate => c.getPublicKey.getAlgorithm
-      case kp: Keypair => kp.algorithm
-    }
-
-    val cipher = createCipher(algorithm, keyalg, provider)
-
-    key match {
-      case k: Key => cipher.init(Cipher.ENCRYPT_MODE, k)
-      case c: Certificate => cipher.init(Cipher.ENCRYPT_MODE, c)
-      case kp: Keypair => cipher.init(Cipher.ENCRYPT_MODE, kp.publicKey)
+    val cipher = key match {
+      case k: Key => {
+        val result = createCipher(algorithm, k.getAlgorithm, provider)
+        result.init(Cipher.ENCRYPT_MODE, k)
+        result
+      }
+      case c: Certificate => {
+        val result = createCipher(algorithm, c.getPublicKey.getAlgorithm, provider)
+        result.init(Cipher.ENCRYPT_MODE, c.getPublicKey)
+        result
+      }
+      case kp: Keypair => {
+        val result = createCipher(algorithm, kp.algorithm, provider)
+        result.init(Cipher.ENCRYPT_MODE, kp.publicKey)
+        result
+      }
     }
 
     if (cipher.getIV != null) initVectorHandler(cipher.getIV)
@@ -102,21 +106,22 @@ object Ciphers {
     algorithm: Option[String] = None,
     provider: Option[Any] = None): Unit = {
 
-    val keyalg = key match {
-      case k: Key => k.getAlgorithm
-      case kp: Keypair => kp.algorithm
-    }
-
-    val cipher = createCipher(algorithm, keyalg, provider)
-
     val spec = initVector match {
       case Some(iv) => new IvParameterSpec(iv)
       case None => null
     }
 
-    key match {
-      case k: Key => cipher.init(Cipher.DECRYPT_MODE, k, spec)
-      case kp: Keypair => cipher.init(Cipher.DECRYPT_MODE, kp.privateKey, spec)
+    val cipher = key match {
+      case k: Key => {
+        val result = createCipher(algorithm, k.getAlgorithm, provider)
+        result.init(Cipher.DECRYPT_MODE, k, spec)
+        result
+      }
+      case kp: Keypair => {
+        val result = createCipher(algorithm, kp.algorithm, provider)
+        result.init(Cipher.DECRYPT_MODE, kp.privateKey, spec)
+        result
+      }
     }
 
     streamHandler(new CipherInputStream(toStream(data), cipher))
@@ -129,16 +134,17 @@ object Ciphers {
     algorithm: Option[String] = None,
     provider: Option[Any] = None): Array[Byte] = {
 
-    val keyalg = key match {
-      case k: PrivateKey => k.getAlgorithm
-      case kp: Keypair => kp.algorithm
-    }
-
-    val signer = createSignature(algorithm, keyalg, provider)
-
-    key match {
-      case k: PrivateKey => signer.initSign(k)
-      case kp: Keypair => signer.initSign(kp.privateKey)
+    val signer = key match {
+      case k: PrivateKey => {
+        val result = createSignature(algorithm, k.getAlgorithm, provider)
+        result.initSign(k)
+        result
+      }
+      case kp: Keypair => {
+        val result = createSignature(algorithm, kp.algorithm, provider)
+        result.initSign(kp.privateKey)
+        result
+      }
     }
 
     streamHandler(
@@ -160,17 +166,22 @@ object Ciphers {
     algorithm: Option[String] = None,
     provider: Option[Any] = None): Boolean = {
 
-    val keyalg = key match {
-      case k: PrivateKey => k.getAlgorithm
-      case kp: Keypair => kp.algorithm
-    }
-
-    val signer = createSignature(algorithm, keyalg, provider)
-
-    key match {
-      case k: PublicKey => signer.initVerify(k)
-      case c: Certificate => signer.initVerify(c)
-      case kp: Keypair => signer.initVerify(kp.publicKey)
+    val signer = key match {
+      case k: PublicKey => {
+        val result = createSignature(algorithm, k.getAlgorithm, provider)
+        result.initVerify(k)
+        result
+      }
+      case kp: Keypair => {
+        val result = createSignature(algorithm, kp.algorithm, provider)
+        result.initVerify(kp.publicKey)
+        result
+      }
+      case c: Certificate => {
+        val result = createSignature(algorithm, c.getPublicKey.getAlgorithm, provider)
+        result.initVerify(c)
+        result
+      }
     }
 
     streamHandler(
