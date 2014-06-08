@@ -26,13 +26,13 @@ import javax.crypto.spec.IvParameterSpec
 object Ciphers {
 
   //Maps the default cipher type for the given key types
-  private val cipherForKeyType = Map(
+  private[this] val cipherForKeyType = Map(
     "AES" -> "AES/CBC/PKCS5Padding",
     "DES" -> "DES/CBC/PKCS5Padding",
     "RSA" -> "RSA/ECB/PKCS1Padding")
 
   //Maps the default signature type for a given key type
-  private val signatureForKeyType = Map(
+  private[this] val signatureForKeyType = Map(
     "RSA" -> "SHA256withRSA",
     "DSA" -> "SHA1withDSA")
 

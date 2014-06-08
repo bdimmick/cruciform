@@ -39,7 +39,7 @@ class SymmetricKeyGenerator(
   strength: Option[Int] = None,
   provider: Option[Any] = None) {
 
-  private val generator = provider match {
+  private [this] val generator = provider match {
     case None => KeyGenerator.getInstance(algorithm)
     case Some(value) => {
       value match {
@@ -67,7 +67,7 @@ class AsymmetricKeyGenerator(
   strength: Option[Int] = None,
   provider: Option[Any] = None) {
 
-  private val generator = provider match {
+  private [this] val generator = provider match {
     case None => KeyPairGenerator.getInstance(algorithm)
     case Some(value) => {
       value match {
