@@ -2,12 +2,16 @@ package com.hexagrammatic.cruciform
 
 import StreamUtils._
 
-import java.io._
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.InputStream
+import java.io.ObjectInputStream
+import java.util.concurrent.atomic.AtomicInteger
 
 import org.apache.commons.io.input.CountingInputStream
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
-import java.util.concurrent.atomic.AtomicInteger
+
 
 class StreamUtilsSpec extends FlatSpec with Matchers {
 
@@ -104,7 +108,7 @@ class StreamUtilsSpec extends FlatSpec with Matchers {
   "Stream utils" should "be able to provide a default buffer handler for a functional stream" in {
     val data = "Hello World".getBytes
     val count = new AtomicInteger(0)
-    val f = (b: Byte) => { count.incrementAndGet }
+    val f = (b: Byte) => count.incrementAndGet
     val out = new ByteArrayOutputStream
 
     copyHandler(out)(new FunctionFilterStream(toStream(data), f))
@@ -116,8 +120,8 @@ class StreamUtilsSpec extends FlatSpec with Matchers {
     val data = "Hello World".getBytes
     val byteUseCount = new AtomicInteger(0)
     val bufferUseCount = new AtomicInteger(0)
-    val byteFunc = (b: Byte) => { byteUseCount.incrementAndGet }
-    val bufferFunc = (buf: Array[Byte], off: Int, len: Int) => { bufferUseCount.incrementAndGet }
+    val byteFunc = (b: Byte) => byteUseCount.incrementAndGet
+    val bufferFunc = (buf: Array[Byte], off: Int, len: Int) => bufferUseCount.incrementAndGet
 
     val out = new ByteArrayOutputStream
 

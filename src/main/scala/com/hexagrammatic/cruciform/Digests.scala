@@ -1,6 +1,7 @@
 package com.hexagrammatic.cruciform
 
-import java.io.FilterInputStream
+import StreamUtils.FunctionFilterStream
+
 import java.io.InputStream
 import java.security.DigestInputStream
 import java.security.Key
@@ -9,7 +10,6 @@ import java.security.Provider
 
 import javax.crypto.Mac
 
-import StreamUtils.FunctionFilterStream
 
 object Digests {
 

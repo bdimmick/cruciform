@@ -9,6 +9,7 @@ import java.io.OutputStream
 
 import org.apache.commons.io.IOUtils.copy
 
+
 trait Streamable {
   def toStream: InputStream
 }

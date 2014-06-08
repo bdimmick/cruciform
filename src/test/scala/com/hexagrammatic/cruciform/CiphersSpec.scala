@@ -1,10 +1,10 @@
 package com.hexagrammatic.cruciform
 
 import Ciphers._
-import StreamUtils._
+import StreamUtils.copyHandler
+import StreamUtils.noopHandler
 
 import java.io.ByteArrayOutputStream
-
 import java.security.Key
 import java.security.NoSuchAlgorithmException
 
