@@ -22,10 +22,8 @@ class CiphersSpec extends FlatSpec with Matchers with MockFactory {
     val plaintext = new ByteArrayOutputStream()
     val ivStream = new ByteArrayOutputStream()
     
-    val ivHandler = (iv: Array[Byte]) => {
-      ivStream.write(iv)
-    } 
-    
+    val ivHandler = (iv: Array[Byte]) => ivStream.write(iv)
+
     encrypt(data, key, copyHandler(ciphertext), Option(ivHandler))
     decrypt(ciphertext.toByteArray, key, copyHandler(plaintext), Option(ivStream.toByteArray))
     
@@ -54,10 +52,8 @@ class CiphersSpec extends FlatSpec with Matchers with MockFactory {
     val plaintext = new ByteArrayOutputStream()
     val ivStream = new ByteArrayOutputStream()
     
-    val ivHandler = (iv: Array[Byte]) => {
-      ivStream.write(iv)
-    } 
-    
+    val ivHandler = (iv: Array[Byte]) => ivStream.write(iv)
+
     encrypt(data, key, copyHandler(ciphertext), Option(ivHandler))
     decrypt(ciphertext.toByteArray, key, copyHandler(plaintext), Option(ivStream.toByteArray))
     
@@ -74,7 +70,6 @@ class CiphersSpec extends FlatSpec with Matchers with MockFactory {
       encrypt(data, key, noopHandler, algorithm = alg)
     }
   }
-
 
   "Ciphers" should "be able to perform RSA encryption" in {
     val keypair = Generators.keypair()

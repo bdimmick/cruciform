@@ -41,33 +41,50 @@ object Ciphers {
 
   private def createCipher(
     algorithm: Option[String],
-    keyAlgorithm: String,
-    provider: Option[Any] = None): Cipher = {
+    key: Key,
+    mode: Int,
+    provider: Option[Any] = None,
+    initVector: Option[Array[Byte]] = None): Cipher = {
 
-    provider match {
+    val result = provider match {
       case Some(value) => {
         value match {
-          case p: Provider => Cipher.getInstance(findAlgorithm(algorithm, keyAlgorithm, cipherForKeyType), p)
-          case s => Cipher.getInstance(findAlgorithm(algorithm, keyAlgorithm, cipherForKeyType), s.toString)
+          case p: Provider => Cipher.getInstance(findAlgorithm(algorithm, key.getAlgorithm, cipherForKeyType), p)
+          case s => Cipher.getInstance(findAlgorithm(algorithm, key.getAlgorithm, cipherForKeyType), s.toString)
         }
       }
-      case None => Cipher.getInstance(findAlgorithm(algorithm, keyAlgorithm, cipherForKeyType))
+      case None => Cipher.getInstance(findAlgorithm(algorithm, key.getAlgorithm, cipherForKeyType))
     }
+
+    val spec = mode match {
+      case Cipher.DECRYPT_MODE => {
+        initVector match {
+          case Some(iv) => new IvParameterSpec(iv)
+          case None => null
+        }
+      }
+      case _ => null
+    }
+
+    result.init(mode, key, spec)
+    result
   }
 
   private def createSignature(
     algorithm: Option[String],
-    keyAlgorithm: String,
+    key: Key,
     provider: Option[Any] = None): Signature = {
 
     provider match {
       case Some(value) => {
         value match {
-          case p: Provider => Signature.getInstance(findAlgorithm(algorithm, keyAlgorithm, signatureForKeyType), p)
-          case s => Signature.getInstance(findAlgorithm(algorithm, keyAlgorithm, signatureForKeyType), s.toString)
+          case p: Provider =>
+            Signature.getInstance(findAlgorithm(algorithm, key.getAlgorithm, signatureForKeyType), p)
+          case s =>
+            Signature.getInstance(findAlgorithm(algorithm, key.getAlgorithm, signatureForKeyType), s.toString)
         }
       }
-      case None => Signature.getInstance(findAlgorithm(algorithm, keyAlgorithm, signatureForKeyType))
+      case None => Signature.getInstance(findAlgorithm(algorithm, key.getAlgorithm, signatureForKeyType))
     }
   }
 
@@ -80,21 +97,9 @@ object Ciphers {
     provider: Option[Any] = None): Any = {
 
     val cipher = key match {
-      case k: Key => {
-        val result = createCipher(algorithm, k.getAlgorithm, provider)
-        result.init(Cipher.ENCRYPT_MODE, k)
-        result
-      }
-      case c: Certificate => {
-        val result = createCipher(algorithm, c.getPublicKey.getAlgorithm, provider)
-        result.init(Cipher.ENCRYPT_MODE, c.getPublicKey)
-        result
-      }
-      case kp: Keypair => {
-        val result = createCipher(algorithm, kp.algorithm, provider)
-        result.init(Cipher.ENCRYPT_MODE, kp.publicKey)
-        result
-      }
+      case k: Key => createCipher(algorithm, k, Cipher.ENCRYPT_MODE, provider)
+      case c: Certificate => createCipher(algorithm, c.getPublicKey, Cipher.ENCRYPT_MODE, provider)
+      case kp: Keypair => createCipher(algorithm, kp.publicKey, Cipher.ENCRYPT_MODE, provider)
     }
 
     Option(cipher.getIV) match {
@@ -120,22 +125,9 @@ object Ciphers {
     algorithm: Option[String] = None,
     provider: Option[Any] = None): Unit = {
 
-    val spec = initVector match {
-      case Some(iv) => new IvParameterSpec(iv)
-      case None => null
-    }
-
     val cipher = key match {
-      case k: Key => {
-        val result = createCipher(algorithm, k.getAlgorithm, provider)
-        result.init(Cipher.DECRYPT_MODE, k, spec)
-        result
-      }
-      case kp: Keypair => {
-        val result = createCipher(algorithm, kp.algorithm, provider)
-        result.init(Cipher.DECRYPT_MODE, kp.privateKey, spec)
-        result
-      }
+      case k: Key => createCipher(algorithm, k, Cipher.DECRYPT_MODE, provider, initVector)
+      case kp: Keypair => createCipher(algorithm, kp.privateKey, Cipher.DECRYPT_MODE, provider, initVector)
     }
 
     streamHandler(new CipherInputStream(toStream(data), cipher))
@@ -158,12 +150,12 @@ object Ciphers {
 
     val signer = key match {
       case k: PrivateKey => {
-        val result = createSignature(algorithm, k.getAlgorithm, provider)
+        val result = createSignature(algorithm, k, provider)
         result.initSign(k)
         result
       }
       case kp: Keypair => {
-        val result = createSignature(algorithm, kp.algorithm, provider)
+        val result = createSignature(algorithm, kp.privateKey, provider)
         result.initSign(kp.privateKey)
         result
       }
@@ -184,17 +176,17 @@ object Ciphers {
 
     val signer = key match {
       case k: PublicKey => {
-        val result = createSignature(algorithm, k.getAlgorithm, provider)
+        val result = createSignature(algorithm, k, provider)
         result.initVerify(k)
         result
       }
       case kp: Keypair => {
-        val result = createSignature(algorithm, kp.algorithm, provider)
+        val result = createSignature(algorithm, kp.publicKey, provider)
         result.initVerify(kp.publicKey)
         result
       }
       case c: Certificate => {
-        val result = createSignature(algorithm, c.getPublicKey.getAlgorithm, provider)
+        val result = createSignature(algorithm, c.getPublicKey, provider)
         result.initVerify(c)
         result
       }
