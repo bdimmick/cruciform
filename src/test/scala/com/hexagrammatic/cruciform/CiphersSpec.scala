@@ -26,7 +26,7 @@ class CiphersSpec extends FlatSpec with Matchers with MockFactory {
       ivStream.write(iv)
     } 
     
-    encrypt(data, key, copyHandler(ciphertext), ivHandler)
+    encrypt(data, key, copyHandler(ciphertext), Option(ivHandler))
     decrypt(ciphertext.toByteArray, key, copyHandler(plaintext), Option(ivStream.toByteArray))
     
     data.getBytes should not equal (ciphertext.toByteArray)
@@ -58,12 +58,24 @@ class CiphersSpec extends FlatSpec with Matchers with MockFactory {
       ivStream.write(iv)
     } 
     
-    encrypt(data, key, copyHandler(ciphertext), ivHandler)
+    encrypt(data, key, copyHandler(ciphertext), Option(ivHandler))
     decrypt(ciphertext.toByteArray, key, copyHandler(plaintext), Option(ivStream.toByteArray))
     
     data.getBytes should not equal (ciphertext.toByteArray)
     data.getBytes should equal (plaintext.toByteArray)
   }
+
+  "Ciphers" should "throw an exception if an IV is created and no handler is specified" in {
+    val alg = Option("AES/CBC/PKCS5Padding")
+    val key = Generators.key()
+    val data = "Hello World"
+    val ciphertext = new ByteArrayOutputStream()
+
+    intercept[IllegalArgumentException] {
+      encrypt(data, key, copyHandler(ciphertext), algorithm = alg)
+    }
+  }
+
 
   "Ciphers" should "be able to perform RSA encryption" in {
     val keypair = Generators.keypair()

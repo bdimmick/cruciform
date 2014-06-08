@@ -13,19 +13,23 @@ import javax.crypto.spec.IvParameterSpec
 import scala.Some
 import java.util.concurrent.atomic.AtomicReference
 
-
+/**
+ * Provides functions to perform cryptographic operations.
+ *
+ * @author Bill Dimmick <me@billdimmick.com>
+ */
 object Ciphers {
 
+  //Maps the default cipher type for the given key types
   private val cipherForKeyType = Map(
     "AES" -> "AES/CBC/PKCS5Padding",
     "DES" -> "DES/CBC/PKCS5Padding",
     "RSA" -> "RSA/ECB/PKCS1Padding")
 
+  //Maps the default signature type for a given key type
   private val signatureForKeyType = Map(
     "RSA" -> "SHA256withRSA",
     "DSA" -> "SHA1withDSA")
-
-  private def noopIVHandler(iv: Array[Byte]): Any = {}
 
   private def findAlgorithm(algorithm: Option[String], keyAlgorithm: String, map: Map[String, String]): String =
     algorithm.getOrElse(
@@ -71,9 +75,9 @@ object Ciphers {
     data: Any,
     key: Any,
     streamHandler: (InputStream) => Any,
-    initVectorHandler: (Array[Byte]) => Any = noopIVHandler,
+    initVectorHandler: Option[(Array[Byte]) => Unit] = None,
     algorithm: Option[String] = None,
-    provider: Option[Any] = None): Unit = {
+    provider: Option[Any] = None): Any = {
 
     val cipher = key match {
       case k: Key => {
@@ -93,7 +97,17 @@ object Ciphers {
       }
     }
 
-    if (cipher.getIV != null) initVectorHandler(cipher.getIV)
+    Option(cipher.getIV) match {
+      case Some(iv) => {
+        initVectorHandler.getOrElse(
+          {
+            val alg = cipher.getAlgorithm
+            throw new IllegalArgumentException("Algorithm $alg requires an IV handler to be provided.")
+          }
+        )(iv)
+      }
+      case None =>
+    }
 
     streamHandler(new CipherInputStream(toStream(data), cipher))
   }
