@@ -69,10 +69,9 @@ class CiphersSpec extends FlatSpec with Matchers with MockFactory {
     val alg = Option("AES/CBC/PKCS5Padding")
     val key = Generators.key()
     val data = "Hello World"
-    val ciphertext = new ByteArrayOutputStream()
 
     intercept[IllegalArgumentException] {
-      encrypt(data, key, copyHandler(ciphertext), algorithm = alg)
+      encrypt(data, key, noopHandler, algorithm = alg)
     }
   }
 
