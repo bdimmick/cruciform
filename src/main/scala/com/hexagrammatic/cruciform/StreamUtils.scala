@@ -9,23 +9,52 @@ import java.io.OutputStream
 
 import org.apache.commons.io.IOUtils.copy
 
-
+/**
+ * Trait to provide a stream during cryptographic operations
+ */
 trait Streamable {
   def toStream: InputStream
 }
 
+/**
+ * A collection of utilities for creating and managing streams
+ * during cryptographic operations.
+ */
 object StreamUtils {
+
+  /**
+   * Provides a funciton to read a stream fully, as a blocking operation, dropping all of the bytes read.
+   */
   val noopHandler = (i: InputStream) => {
     val buffer = new Array[Byte](128 * 1204)
     while (-1 != i.read(buffer)) {}
   }
 
+  /**
+   * Creates a function to read a stream fully, as a blocking operation,
+   * writing the bytes out to the provided output stream.
+   * @param o the destination output stream
+   * @return the handling function
+   */
   def copyHandler(o: OutputStream): (InputStream) => Unit = {
     (i: InputStream) => {
       copy(i, o)
     }
   }
 
+  /**
+   * Converts the provided object to a stream for use in cryptographic operations.
+   * The conversion rules are as follows, in the following order:
+   *   * `Streamable` objects have the result of their `toStream` method returned
+   *   * `InputStream`s are returned as-is
+   *   * `String`s return a stream of their bytes in the platform's default charset
+   *   * `Array[Byte]`s return a stream of the provided array
+   *   * `Array[Char]`s  return a stream of their bytes in the platform's default charset
+   *   * `Serializable`s return a stream of bytes as written to an ObjectOutputStream
+   * @param data the object to convert
+   * @return the stream
+   * @throws IllegalArgumentException if the object cannot be converted to a stream
+   */
   def toStream(data: Any): InputStream = {
     data match {
       case x: Streamable => x.toStream
@@ -48,9 +77,23 @@ object StreamUtils {
     }
   }
 
-  def makeBufferHandler(f:(Byte => Any))(buf: Array[Byte], off: Int, len: Int) =
+  /**
+   * Converts a byte-handling function to a curryable function that can handle buffers of bytes.
+   * @param f the individual byte-handling function
+   * @param buf the buffer to be written in the curried function
+   * @param off the offset of the buffer to be written in the curried function
+   * @param len the length of the buffer to be written in the curried function
+   * @return the curried function
+   */
+  def makeBufferedFilter(f:(Byte => Any))(buf: Array[Byte], off: Int, len: Int) =
     buf.slice(off, off + len).foreach(f)
 
+  /**
+   * Class to perform filtering operations on a stream as it is read
+   * @param in the input stream to filter on
+   * @param byteHandler handler for individual bytes
+   * @param bufferHandler handler for byte buffers - defaults to a function built by `makeBufferedFilter`
+   */
   class FunctionFilterStream(
     in: InputStream,
     byteHandler: (Byte) => Any,
@@ -68,7 +111,7 @@ object StreamUtils {
     override def read(b: Array[Byte], off: Int, len: Int): Int = {
       val result = in.read(b, off, len)
       if (result > 0) {
-        bufferHandler.getOrElse(makeBufferHandler(byteHandler) _)(b, off, result)
+        bufferHandler.getOrElse(makeBufferedFilter(byteHandler) _)(b, off, result)
       }
       result
     }

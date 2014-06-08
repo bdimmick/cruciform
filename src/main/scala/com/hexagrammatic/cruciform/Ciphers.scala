@@ -19,9 +19,8 @@ import javax.crypto.CipherInputStream
 import javax.crypto.spec.IvParameterSpec
 
 /**
- * Provides functions to perform cryptographic operations.
+ * Provides functions to perform symmetric and asymmetric cryptographic operations.
  *
- * @author Bill Dimmick <me@billdimmick.com>
  */
 object Ciphers {
 
