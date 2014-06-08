@@ -6,6 +6,7 @@ import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 
 import java.security.InvalidParameterException
+import java.security.KeyPair
 import java.security.NoSuchAlgorithmException
 
 
@@ -72,8 +73,8 @@ class GeneratorsSpec extends FlatSpec with Matchers {
     val pair = generator.generate
     
     pair should not be null
-    pair.privateKey should not be null
-    pair.publicKey should not be null
+    pair.getPrivate should not be null
+    pair.getPublic should not be null
   }
 
   "Keypair generator" should "be able to generate a keypair with just strength" in {
@@ -81,8 +82,8 @@ class GeneratorsSpec extends FlatSpec with Matchers {
     val pair = generator.generate
     
     pair should not be null
-    pair.privateKey should not be null
-    pair.publicKey should not be null
+    pair.getPrivate should not be null
+    pair.getPublic should not be null
   }
 
   "Keypair generator" should "be able to generate a keypair with algorithm" in {
@@ -91,25 +92,26 @@ class GeneratorsSpec extends FlatSpec with Matchers {
     val pair = generator.generate
     
     pair should not be null
-    pair.privateKey should not be null
-    pair.publicKey should not be null    
-    pair.algorithm should equal (alg)
+    pair.getPrivate should not be null
+    pair.getPublic should not be null
+    pair.getPrivate.getAlgorithm should equal (alg)
+    pair.getPublic.getAlgorithm should equal (alg)
   }
   
   "Keypair generator function" should "be able to generate a keypair with no params" in {
     val pair = keypair()
     
     pair should not be null
-    pair.privateKey should not be null
-    pair.publicKey should not be null    
+    pair.getPrivate should not be null
+    pair.getPublic should not be null
   }
 
   "Keypair generator function" should "be able to generate a keypair with just strength" in {
     val pair = keypair(strength = Option(1024))
     
     pair should not be null
-    pair.privateKey should not be null
-    pair.publicKey should not be null    
+    pair.getPrivate should not be null
+    pair.getPublic should not be null
   }
 
   "Keypair generator function" should "be able to generate a keypair with algorithm" in {
@@ -117,7 +119,9 @@ class GeneratorsSpec extends FlatSpec with Matchers {
     val pair = keypair(alg)
     
     pair should not be null
-    pair.privateKey should not be null
-    pair.publicKey should not be null    
-    pair.algorithm should equal (alg)  }
+    pair.getPrivate should not be null
+    pair.getPublic should not be null
+    pair.getPrivate.getAlgorithm should equal (alg)
+    pair.getPublic.getAlgorithm should equal (alg)
+  }
 }

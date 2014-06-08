@@ -5,6 +5,7 @@ import StreamUtils.toStream
 
 import java.io.InputStream
 import java.security.Key
+import java.security.KeyPair
 import java.security.NoSuchAlgorithmException
 import java.security.PrivateKey
 import java.security.Provider
@@ -106,7 +107,7 @@ object Ciphers {
     val cipher = key match {
       case k: Key => createCipher(algorithm, k, Cipher.ENCRYPT_MODE, provider)
       case c: Certificate => createCipher(algorithm, c.getPublicKey, Cipher.ENCRYPT_MODE, provider)
-      case kp: Keypair => createCipher(algorithm, kp.publicKey, Cipher.ENCRYPT_MODE, provider)
+      case kp: KeyPair => createCipher(algorithm, kp.getPublic, Cipher.ENCRYPT_MODE, provider)
     }
 
     Option(cipher.getIV) match {
@@ -135,8 +136,8 @@ object Ciphers {
     val cipher = key match {
       case k: Key =>
         createCipher(algorithm, k, Cipher.DECRYPT_MODE, provider, initVector)
-      case kp: Keypair =>
-        createCipher(algorithm, kp.privateKey, Cipher.DECRYPT_MODE, provider, initVector)
+      case kp: KeyPair =>
+        createCipher(algorithm, kp.getPrivate, Cipher.DECRYPT_MODE, provider, initVector)
     }
 
     streamHandler(new CipherInputStream(toStream(data), cipher))
@@ -159,7 +160,7 @@ object Ciphers {
 
     val (signer, signKey) = key match {
       case k: PrivateKey => (createSignature(algorithm, k, provider), k)
-      case kp: Keypair => (createSignature(algorithm, kp.privateKey, provider), kp.privateKey)
+      case kp: KeyPair => (createSignature(algorithm, kp.getPrivate, provider), kp.getPrivate)
     }
 
     signer.initSign(signKey)
@@ -177,7 +178,7 @@ object Ciphers {
 
     val (signer, verifyKey) = key match {
       case k: PublicKey => (createSignature(algorithm, k, provider), k)
-      case kp: Keypair => (createSignature(algorithm, kp.publicKey, provider), kp.publicKey)
+      case kp: KeyPair => (createSignature(algorithm, kp.getPublic, provider), kp.getPublic)
       case c: Certificate => (createSignature(algorithm, c.getPublicKey, provider), c.getPublicKey)
     }
 

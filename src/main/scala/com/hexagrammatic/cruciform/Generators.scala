@@ -1,8 +1,12 @@
 package com.hexagrammatic.cruciform
 
 import java.security.Key
+import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.Provider
+
+import javax.crypto.KeyGenerator
+
 
 /**
  *
@@ -23,7 +27,7 @@ object Generators {
   def keypair(
     algorithm: String = Constants.DEFAULT_ASYMMETRIC_ALG,
     strength: Option[Int] = None,
-    provider: Option[Any] = None): Keypair =
+    provider: Option[Any] = None): KeyPair =
     new AsymmetricKeyGenerator(algorithm, strength, provider).generate
 }
 
@@ -36,11 +40,11 @@ class SymmetricKeyGenerator(
   provider: Option[Any] = None) {
 
   private val generator = provider match {
-    case None => javax.crypto.KeyGenerator.getInstance(algorithm)
+    case None => KeyGenerator.getInstance(algorithm)
     case Some(value) => {
       value match {
-        case p: Provider => javax.crypto.KeyGenerator.getInstance(algorithm, p)
-        case str => javax.crypto.KeyGenerator.getInstance(algorithm, str.toString)
+        case p: Provider => KeyGenerator.getInstance(algorithm, p)
+        case str => KeyGenerator.getInstance(algorithm, str.toString)
       }
     }
   }
@@ -80,5 +84,5 @@ class AsymmetricKeyGenerator(
     }
   }
 
-  def generate: Keypair = new Keypair(generator.generateKeyPair)
+  def generate: KeyPair = generator.generateKeyPair
 }
