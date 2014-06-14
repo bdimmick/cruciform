@@ -1,6 +1,7 @@
 package com.hexagrammatic.cruciform
 
 import StreamUtils.FunctionFilterStream
+import StreamUtils.NullStreamHandler
 import StreamUtils.toStream
 
 import java.io.InputStream
@@ -25,13 +26,13 @@ import javax.crypto.spec.IvParameterSpec
 object Ciphers {
 
   //Maps the default cipher type for the given key types
-  private[this] val cipherForKeyType = Map(
+  private[this] val CipherForKeyType = Map(
     "AES" -> "AES/CBC/PKCS5Padding",
     "DES" -> "DES/CBC/PKCS5Padding",
     "RSA" -> "RSA/ECB/PKCS1Padding")
 
   //Maps the default signature type for a given key type
-  private[this] val signatureForKeyType = Map(
+  private[this] val SignatureForKeyType = Map(
     "RSA" -> "SHA256withRSA",
     "DSA" -> "SHA1withDSA")
 
@@ -53,7 +54,7 @@ object Ciphers {
     provider: Option[Any] = None,
     initVector: Option[Array[Byte]] = None): Cipher = {
 
-    val foundAlgorithm = findAlgorithm(algorithm, key.getAlgorithm, cipherForKeyType)
+    val foundAlgorithm = findAlgorithm(algorithm, key.getAlgorithm, CipherForKeyType)
     val result = provider match {
       case Some(value) => {
         value match {
@@ -83,7 +84,7 @@ object Ciphers {
     key: Key,
     provider: Option[Any] = None): Signature = {
 
-    val foundAlgorithm = findAlgorithm(algorithm, key.getAlgorithm, signatureForKeyType)
+    val foundAlgorithm = findAlgorithm(algorithm, key.getAlgorithm, SignatureForKeyType)
     provider match {
       case Some(value) => {
         value match {
@@ -153,7 +154,7 @@ object Ciphers {
   def sign(
     data: Any,
     key: Any,
-    streamHandler: (InputStream) => Unit = StreamUtils.noopHandler,
+    streamHandler: (InputStream) => Unit = NullStreamHandler,
     algorithm: Option[String] = None,
     provider: Option[Any] = None): Array[Byte] = {
 
@@ -171,7 +172,7 @@ object Ciphers {
     data: Any,
     key: Any,
     signature: Array[Byte],
-    streamHandler: (InputStream) => Unit = StreamUtils.noopHandler,
+    streamHandler: (InputStream) => Unit = NullStreamHandler,
     algorithm: Option[String] = None,
     provider: Option[Any] = None): Boolean = {
 

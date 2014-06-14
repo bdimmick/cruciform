@@ -2,7 +2,7 @@ package com.hexagrammatic.cruciform
 
 import Ciphers._
 import StreamUtils.copyHandler
-import StreamUtils.noopHandler
+import StreamUtils.NullStreamHandler
 
 import java.io.ByteArrayOutputStream
 import java.security.Key
@@ -67,7 +67,7 @@ class CiphersSpec extends FlatSpec with Matchers with MockFactory {
     val data = "Hello World"
 
     intercept[IllegalArgumentException] {
-      encrypt(data, key, noopHandler, algorithm = alg)
+      encrypt(data, key, NullStreamHandler, algorithm = alg)
     }
   }
 

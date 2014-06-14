@@ -25,7 +25,7 @@ object StreamUtils {
   /**
    * Provides a funciton to read a stream fully, as a blocking operation, dropping all of the bytes read.
    */
-  val noopHandler = (i: InputStream) => {
+  val NullStreamHandler = (i: InputStream) => {
     val buffer = new Array[Byte](128 * 1204)
     while (-1 != i.read(buffer)) {}
   }

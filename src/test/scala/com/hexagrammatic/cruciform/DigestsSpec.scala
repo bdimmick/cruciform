@@ -1,7 +1,6 @@
 package com.hexagrammatic.cruciform
 
 import Digests._
-import Digests.Constants._
 import StreamUtils.copyHandler
 
 import java.io.ByteArrayOutputStream
@@ -16,12 +15,12 @@ import org.scalatest.Matchers
 
 class DigestsSpec extends FlatSpec with Matchers {
 
-  def assertDigest(data: String, digest: Array[Byte], alg: String = DEFAULT_DIGEST_ALGORITHM) {
+  def assertDigest(data: String, digest: Array[Byte], alg: String = DefaultDigestAlgorithm) {
     digest should not be (null)
     MessageDigest.getInstance(alg).digest(data.getBytes) should equal (digest)
   }
 
-  def assertHMAC(data: String, key: Key, hmac: Array[Byte], alg: String = DEFAULT_HMAC_ALGORITHM) {
+  def assertHMAC(data: String, key: Key, hmac: Array[Byte], alg: String = DefaultHMACAlgorithm) {
     hmac should not be null
 
     val mac = Mac.getInstance(alg)
@@ -45,9 +44,8 @@ class DigestsSpec extends FlatSpec with Matchers {
     val data = "Hello World"
 
     val out = new ByteArrayOutputStream()
-    val handler = copyHandler(out)
 
-    assertDigest(data, digest(data = data, handler = handler))
+    assertDigest(data, digest(data = data, streamHandler = copyHandler(out)))
     data.getBytes should equal (out.toByteArray)
   }
 
@@ -70,9 +68,8 @@ class DigestsSpec extends FlatSpec with Matchers {
     val data = "Hello Whirl"
 
     val out = new ByteArrayOutputStream()
-    val handler = copyHandler(out)
 
-    assertHMAC(data, k, hmac(data, k, algorithm = alg, handler = handler), alg = alg)    
+    assertHMAC(data, k, hmac(data, k, algorithm = alg, streamHandler = copyHandler(out)), alg = alg)
     data.getBytes should equal (out.toByteArray)
   }
 

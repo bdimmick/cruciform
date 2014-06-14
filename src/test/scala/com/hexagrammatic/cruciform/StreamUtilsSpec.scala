@@ -20,8 +20,8 @@ class StreamUtilsSpec extends FlatSpec with Matchers {
   "Stream utils" should "be able to provide a no-op handler that reads an entire stream" in {
     val data = "Hello World"
     val stream = new CountingInputStream(new ByteArrayInputStream(data.getBytes))
-    
-    noopHandler(stream)
+
+    NullStreamHandler(stream)
     
     (stream.getByteCount) should equal (data.getBytes.length)
   }

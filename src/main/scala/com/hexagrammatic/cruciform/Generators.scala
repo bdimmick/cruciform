@@ -13,29 +13,30 @@ import javax.crypto.KeyGenerator
  */
 object Generators {
 
-  object Constants {
-    val DEFAULT_SYMMETRIC_ALG = "AES"
-    val DEFAULT_ASYMMETRIC_ALG = "RSA"
-  }
+  val DefaultAsymmetricAlgorithm = "RSA"
+  val DefaultSymmetricAlgorithm = "AES"
 
   def key(
-    algorithm: String = Constants.DEFAULT_SYMMETRIC_ALG,
+    algorithm: String = DefaultSymmetricAlgorithm,
     strength: Option[Int] = None,
     provider: Option[Any] = None): Key =
     new SymmetricKeyGenerator(algorithm, strength, provider).generate
 
   def keypair(
-    algorithm: String = Constants.DEFAULT_ASYMMETRIC_ALG,
+    algorithm: String = DefaultAsymmetricAlgorithm,
     strength: Option[Int] = None,
     provider: Option[Any] = None): KeyPair =
     new AsymmetricKeyGenerator(algorithm, strength, provider).generate
 }
 
+import Generators.DefaultAsymmetricAlgorithm
+import Generators.DefaultSymmetricAlgorithm
+
 /**
  *
  */
 class SymmetricKeyGenerator(
-  algorithm: String = Generators.Constants.DEFAULT_SYMMETRIC_ALG,
+  algorithm: String = DefaultSymmetricAlgorithm,
   strength: Option[Int] = None,
   provider: Option[Any] = None) {
 
@@ -63,7 +64,7 @@ class SymmetricKeyGenerator(
  *
  */
 class AsymmetricKeyGenerator(
-  algorithm: String = Generators.Constants.DEFAULT_ASYMMETRIC_ALG,
+  algorithm: String = DefaultAsymmetricAlgorithm,
   strength: Option[Int] = None,
   provider: Option[Any] = None) {
 
