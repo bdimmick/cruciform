@@ -76,13 +76,13 @@ class StreamUtilsSpec extends FlatSpec with Matchers {
     (out.toByteArray.deep) should equal (data.getBytes.deep)
   }
 
-  private class TestingStreamable(s:String) extends Streamable {
-    override def toStream:InputStream = new ByteArrayInputStream(s.getBytes)
+  private class TestingReadable(s:String) extends Readable {
+    override def stream:InputStream = new ByteArrayInputStream(s.getBytes)
   }
  
   "Stream utils" should "be able to convert a streamable to a stream" in {
     val data = "Hello World"
-    val in = toStream(new TestingStreamable(data))    
+    val in = toStream(new TestingReadable(data))
     val out = new ByteArrayOutputStream
     
     copyHandler(out)(in)

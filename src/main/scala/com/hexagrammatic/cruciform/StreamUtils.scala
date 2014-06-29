@@ -9,11 +9,18 @@ import java.io.OutputStream
 
 import org.apache.commons.io.IOUtils.copy
 
+
 /**
  * Trait to provide a stream during cryptographic operations
  */
-trait Streamable {
-  def toStream: InputStream
+trait Readable {
+  def stream: InputStream
+}
+
+trait Writeable {
+  def to[T <: OutputStream](out: T): T
+  def toBytes: Array[Byte] = to(new ByteArrayOutputStream).toByteArray
+  override def toString: String = new String(toBytes)
 }
 
 /**
@@ -22,8 +29,11 @@ trait Streamable {
  */
 object StreamUtils {
 
+  type StreamHandler = (InputStream) => Unit
+
   /**
-   * Provides a funciton to read a stream fully, as a blocking operation, dropping all of the bytes read.
+   * Provides a function to read a stream fully, as a blocking operation,
+   * dropping all of the bytes read.
    */
   val NullStreamHandler = (i: InputStream) => {
     val buffer = new Array[Byte](128 * 1204)
@@ -36,7 +46,7 @@ object StreamUtils {
    * @param o the destination output stream
    * @return the handling function
    */
-  def copyHandler(o: OutputStream): (InputStream) => Unit = {
+  def copyHandler(o: OutputStream): StreamHandler = {
     (i: InputStream) => {
       copy(i, o)
     }
@@ -57,7 +67,7 @@ object StreamUtils {
    */
   def toStream(data: Any): InputStream = {
     data match {
-      case x: Streamable => x.toStream
+      case x: Readable => x.stream
       case i: InputStream => i
       case s: String => new ByteArrayInputStream(s.getBytes)
       case a: Array[Byte] => new ByteArrayInputStream(a)

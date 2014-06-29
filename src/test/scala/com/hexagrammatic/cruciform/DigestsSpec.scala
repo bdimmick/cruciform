@@ -13,7 +13,9 @@ import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 
 
-class DigestsSpec extends FlatSpec with Matchers {
+class DigestsSpec extends FlatSpec with Matchers with Digests {
+
+  val str = "Hello World"
 
   def assertDigest(data: String, digest: Array[Byte], alg: String = DefaultDigestAlgorithm) {
     digest should not be (null)
@@ -30,47 +32,41 @@ class DigestsSpec extends FlatSpec with Matchers {
   }
 
   "Digest" should "be able to digest data with default parameters" in {
-    val data = "Hello World"
-    assertDigest(data, digest(data = data))
+    assertDigest(str, digest data str toBytes)
   }
 
   "Digest" should "be able to digest data with specific algorithm" in {
     val alg = "SHA-1"
-    val data = "Hello World"
-    assertDigest(data, digest(data = data, algorithm = alg), alg = alg)
+    assertDigest(str, digest data str algorithm alg toBytes, alg = alg)
   }
 
   "Digest" should "be able to digest data with a stream handler" in {
-    val data = "Hello World"
-
     val out = new ByteArrayOutputStream()
 
-    assertDigest(data, digest(data = data, streamHandler = copyHandler(out)))
-    data.getBytes should equal (out.toByteArray)
+    assertDigest(str, digest data str streamHandler copyHandler(out) toBytes)
+    str.getBytes should equal (out.toByteArray)
   }
 
   "HMAC" should "be able to digest data with default parameters" in {
     val k = Generators.key()
-    val data = "Hello World"
-    assertHMAC(data, k, hmac(data, k))
+    assertHMAC(str, k, hmac data str key k toBytes)
   }
 
   "HMAC" should "be able to digest data with specific algorithm" in {
     val k = Generators.key()
     val alg = "HmacSHA1"
-    val data = "Hello World"
-    assertHMAC(data, k, hmac(data, k, algorithm = alg), alg = alg)
+    assertHMAC(str, k, hmac data str key k algorithm alg toBytes, alg = alg)
   }
 
   "HMAC" should "be able to digest data with a stream handler" in {
     val k = Generators.key()
     val alg = "HmacSHA1"
-    val data = "Hello Whirl"
 
     val out = new ByteArrayOutputStream()
 
-    assertHMAC(data, k, hmac(data, k, algorithm = alg, streamHandler = copyHandler(out)), alg = alg)
-    data.getBytes should equal (out.toByteArray)
+    assertHMAC(str, k, hmac data str key k algorithm alg streamHandler copyHandler(out) toBytes,
+      alg = alg)
+    str.getBytes should equal (out.toByteArray)
   }
 
 }
