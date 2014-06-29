@@ -23,6 +23,20 @@ trait Writeable {
   override def toString: String = new String(toBytes)
 }
 
+trait StreamConversions {
+  implicit def toStream(s: String): InputStream = new ByteArrayInputStream(s.getBytes)
+  implicit def toStream(x: Readable): InputStream = x.stream
+  implicit def toStream(a: Array[Byte]): InputStream = new ByteArrayInputStream(a)
+  implicit def toStream(a: Array[Char]): InputStream = new ByteArrayInputStream(new String(a).getBytes)
+  implicit def toStream(s: Serializable): InputStream = {
+    val bstream = new ByteArrayOutputStream
+    val ostream = new ObjectOutputStream(bstream)
+    ostream.writeObject(s)
+    ostream.flush
+    new ByteArrayInputStream(bstream.toByteArray)
+  }
+}
+
 /**
  * A collection of utilities for creating and managing streams
  * during cryptographic operations.

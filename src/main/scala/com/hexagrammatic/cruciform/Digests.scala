@@ -5,7 +5,7 @@ import StreamUtils.NullStreamHandler
 import StreamUtils.StreamHandler
 import StreamUtils.toStream
 
-import java.io.OutputStream
+import java.io.{InputStream, OutputStream}
 import java.security.DigestInputStream
 import java.security.Key
 import java.security.MessageDigest
@@ -39,22 +39,22 @@ object Digests {
 /**
  * Provides cryptographic hash functions.
  */
-trait Digests {
+trait Digests extends StreamConversions {
 
   class Digest(
-      _data: Any,
+      _stream: InputStream,
       _algorithm: String = Digests.DefaultDigestAlgorithm,
       _provider: Option[Any] = None,
       _handler: StreamHandler = NullStreamHandler) extends Writeable {
 
     def algorithm(algorithm: String): Digest =
-      new Digest(this._data, algorithm, this._provider, this._handler)
+      new Digest(this._stream, algorithm, this._provider, this._handler)
 
     def provider(provider: Any): Digest =
-      new Digest(this._data, this._algorithm, Option(provider), this._handler)
+      new Digest(this._stream, this._algorithm, Option(provider), this._handler)
 
     def streamHandler(handler: StreamHandler): Digest =
-      new Digest(this._data, this._algorithm, this._provider, handler)
+      new Digest(this._stream, this._algorithm, this._provider, handler)
 
     def to[T <: OutputStream](out: T): T = {
       val md = _provider match {
@@ -66,31 +66,31 @@ trait Digests {
         case None => MessageDigest.getInstance(_algorithm)
       }
 
-      _handler(new DigestInputStream(toStream(_data), md))
+      _handler(new DigestInputStream(_stream, md))
       out.write(md.digest)
       out
     }
   }
 
   class DigestDataNext {
-    def data(data: Any): Digest = new Digest(data)
+    def data(stream: InputStream): Digest = new Digest(stream)
   }
 
   class HMAC(
-      _data: Any,
+      _stream: InputStream,
       _key: Key,
       _algorithm: String = Digests.DefaultHMACAlgorithm,
       _provider: Option[Any] = None,
       _handler: StreamHandler = NullStreamHandler) extends Writeable {
 
     def algorithm(algorithm: String): HMAC =
-      new HMAC(this._data, this._key, algorithm, this._provider, this._handler)
+      new HMAC(this._stream, this._key, algorithm, this._provider, this._handler)
 
     def provider(provider: Any): HMAC =
-      new HMAC(this._data, this._key, this._algorithm, Option(provider), this._handler)
+      new HMAC(this._stream, this._key, this._algorithm, Option(provider), this._handler)
 
     def streamHandler(handler: StreamHandler): HMAC =
-      new HMAC(this._data, this._key, this._algorithm, this._provider, handler)
+      new HMAC(this._stream, this._key, this._algorithm, this._provider, handler)
 
     def to[T <: OutputStream](out: T): T = {
       val mac = _provider match {
@@ -106,7 +106,7 @@ trait Digests {
 
       _handler(
         new FunctionFilterStream(
-          toStream(_data),
+          _stream,
           (b: Byte) => mac.update(b),
           Option((a: Array[Byte], off: Int, len: Int) => mac.update(a, off, len))))
 
@@ -115,12 +115,12 @@ trait Digests {
     }
   }
 
-  class HMACKeyNext(data: Any) {
-    def key(key: Key): HMAC = new HMAC(data, key)
+  class HMACKeyNext(stream: InputStream) {
+    def using(key: Key): HMAC = new HMAC(stream, key)
   }
 
   class HMACDataNext {
-    def data(data: Any): HMACKeyNext = new HMACKeyNext(data)
+    def data(stream: InputStream): HMACKeyNext = new HMACKeyNext(stream)
   }
 
   def digest: DigestDataNext = new DigestDataNext
