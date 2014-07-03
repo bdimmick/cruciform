@@ -112,11 +112,18 @@ trait Ciphers extends StreamConversions {
     def using(pair: KeyPair): EncryptOperation = this using (pair.getPublic)
   }
 
-  class EncryptAskForData {
-    def data(data: InputStream): EncryptAskForKey = new EncryptAskForKey(data)
+  class EncryptAskForData(key: Key) {
+    def data(data: InputStream): EncryptOperation = new EncryptOperation(data, key)
   }
 
-  def encrypt: EncryptAskForData = new EncryptAskForData
+  class EncryptAskForDataOrKey {
+    def data(data: InputStream): EncryptAskForKey = new EncryptAskForKey(data)
+    def using(cert: Certificate):  EncryptAskForData = this using (cert.getPublicKey)
+    def using(key: Key):  EncryptAskForData = new  EncryptAskForData(key)
+    def using(pair: KeyPair):  EncryptAskForData = this using (pair.getPublic)
+  }
+
+  def encrypt: EncryptAskForDataOrKey = new EncryptAskForDataOrKey
 
   class DecryptOperation(
       data: InputStream,
@@ -153,11 +160,17 @@ trait Ciphers extends StreamConversions {
     def using(pair: KeyPair): DecryptOperation = this using pair.getPrivate
   }
 
-  class DecryptAskForData {
-    def data(data: InputStream): DecryptAskForKey = new DecryptAskForKey(data)
+  class DecryptAskForData(key: Key) {
+    def data(data: InputStream): DecryptOperation = new DecryptOperation(data, key)
   }
 
-  def decrypt: DecryptAskForData = new DecryptAskForData
+  class DecryptAskForDataOrKey {
+    def data(data: InputStream): DecryptAskForKey = new DecryptAskForKey(data)
+    def using(key: Key): DecryptAskForData = new DecryptAskForData(key)
+    def using(pair: KeyPair): DecryptAskForData = this using pair.getPrivate
+  }
+
+  def decrypt: DecryptAskForDataOrKey = new DecryptAskForDataOrKey
 
   class SignOperation(
        data: InputStream,

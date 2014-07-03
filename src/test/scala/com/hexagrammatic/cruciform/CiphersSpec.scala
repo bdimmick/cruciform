@@ -14,8 +14,27 @@ class CiphersSpec extends FlatSpec with Matchers with MockFactory with Ciphers {
   val str = "Hello World"
 
   def validateResults(ciphertext: Array[Byte], plaintext: Array[Byte]) {
-    str.getBytes should not equal(ciphertext)
-    str.getBytes should equal(plaintext)
+    (str.getBytes) should not equal (ciphertext)
+    (str.getBytes) should equal (plaintext)
+  }
+
+  "Ciphers" should "be able to use key and data in any order" in {
+    val key = Generators.key()
+    val ivStream1 = new ByteArrayOutputStream()
+    val ivStream2 = new ByteArrayOutputStream()
+
+    val ciphertext1 = encrypt data str using key writeInitVectorTo ivStream1 toBytes
+    val ciphertext2 = encrypt using key data str writeInitVectorTo ivStream2 toBytes
+
+    val plaintext1 = decrypt data ciphertext1 using key withInitVector ivStream1.toByteArray toBytes
+    val plaintext2 = decrypt using key data ciphertext2 withInitVector ivStream2.toByteArray toBytes
+
+    (plaintext1) should equal (plaintext2)
+
+    validateResults(ciphertext1, plaintext2)
+    validateResults(ciphertext1, plaintext1)
+    validateResults(ciphertext2, plaintext2)
+    validateResults(ciphertext2, plaintext1)
   }
 
   "Ciphers" should "be able to perform AES encryption with defaults" in {
