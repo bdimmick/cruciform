@@ -111,9 +111,14 @@ trait Digests extends StreamConversions {
     def using(key: Key): HMACOperation = new HMACOperation(stream, key)
   }
 
-  class HMACAskForData {
-    def data(stream: InputStream): HMACAskForKey = new HMACAskForKey(stream)
+  class HMACAskForData(key: Key) {
+    def data(stream: InputStream): HMACOperation = new HMACOperation(stream, key)
   }
 
-  def hmac: HMACAskForData = new HMACAskForData
+  class HMACAskForDataOrKey {
+    def data(stream: InputStream): HMACAskForKey = new HMACAskForKey(stream)
+    def using(key: Key): HMACAskForData = new HMACAskForData(key)
+  }
+
+  def hmac: HMACAskForDataOrKey = new HMACAskForDataOrKey
 }

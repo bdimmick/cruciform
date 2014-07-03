@@ -44,7 +44,7 @@ class DigestsSpec extends FlatSpec with Matchers with Digests {
     val out = new ByteArrayOutputStream()
 
     assertDigest(digest data str withStreamHandler copyHandler(out) toBytes)
-    str.getBytes should equal (out.toByteArray)
+    (str.getBytes) should equal (out.toByteArray)
   }
 
   "HMAC" should "be able to digest data with default parameters" in {
@@ -65,7 +65,15 @@ class DigestsSpec extends FlatSpec with Matchers with Digests {
     val out = new ByteArrayOutputStream()
 
     assertHMAC(k, hmac data str using k withAlgorithm alg withStreamHandler copyHandler(out) toBytes, alg = alg)
-    str.getBytes should equal (out.toByteArray)
+    (str.getBytes) should equal (out.toByteArray)
+  }
+
+  "HMAC" should "be able to use key and data in any order" in {
+    val k = Generators.key()
+    val hmac1 = hmac data str using k toBytes
+    val hmac2 = hmac using k data str toBytes
+
+    (hmac1) should equal (hmac2)
   }
 
 }
