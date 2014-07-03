@@ -3,16 +3,11 @@ package com.hexagrammatic.cruciform
 import StreamUtils.FunctionFilterStream
 import StreamUtils.NullStreamHandler
 import StreamUtils.StreamHandler
-import StreamUtils.toStream
 
 import java.io.{InputStream, OutputStream}
-import java.security.DigestInputStream
-import java.security.Key
-import java.security.MessageDigest
-import java.security.Provider
+import java.security.{DigestInputStream, Key, MessageDigest, Provider}
 
 import javax.crypto.Mac
-
 
 
 object Digests {
@@ -28,101 +23,97 @@ object Digests {
    * Callers may optionally provide a stream handler that can handle copy operation.
    * This handler must copy all of the data that is expected to be used to create the digest.
    *
-   * @param data the data from which to create the cryptographic hash
-   * @param algorithm the algorithm to use; defaults to SHA-256
-   * @param provider the JCE provider to use for the digest algorithm
-   * @param streamHandler handler for the data stream; defaults to a no-op handler
-   * @return the cryptographic hash as an array of bytes
    */
 }
 
 /**
- * Provides cryptographic hash functions.
+ * Provides cryptographic hash extensions.
  */
 trait Digests extends StreamConversions {
 
-  class Digest(
-      _stream: InputStream,
-      _algorithm: String = Digests.DefaultDigestAlgorithm,
-      _provider: Option[Any] = None,
-      _handler: StreamHandler = NullStreamHandler) extends Writeable {
+  class DigestOperation(
+      stream: InputStream,
+      algorithm: String = Digests.DefaultDigestAlgorithm,
+      provider: Option[Any] = None,
+      handler: StreamHandler = NullStreamHandler) extends Writeable {
 
-    def algorithm(algorithm: String): Digest =
-      new Digest(this._stream, algorithm, this._provider, this._handler)
+    def withAlgorithm(algorithm: String): DigestOperation =
+      new DigestOperation(stream, algorithm, provider, handler)
 
-    def provider(provider: Any): Digest =
-      new Digest(this._stream, this._algorithm, Option(provider), this._handler)
+    def withProvider(provider: Any): DigestOperation =
+      new DigestOperation(stream, algorithm, Option(provider), handler)
 
-    def streamHandler(handler: StreamHandler): Digest =
-      new Digest(this._stream, this._algorithm, this._provider, handler)
+    def withStreamHandler(handler: StreamHandler): DigestOperation =
+      new DigestOperation(stream, algorithm, provider, handler)
 
     def to[T <: OutputStream](out: T): T = {
-      val md = _provider match {
+      val md = provider match {
         case Some(value) =>
           value match {
-            case p:Provider => MessageDigest.getInstance(_algorithm, p)
-            case s => MessageDigest.getInstance(_algorithm, s.toString)
+            case p:Provider => MessageDigest getInstance(algorithm, p)
+            case s => MessageDigest getInstance(algorithm, s.toString)
           }
-        case None => MessageDigest.getInstance(_algorithm)
+        case None => MessageDigest getInstance(algorithm)
       }
 
-      _handler(new DigestInputStream(_stream, md))
+      handler(new DigestInputStream(stream, md))
       out.write(md.digest)
       out
     }
   }
 
-  class DigestDataNext {
-    def data(stream: InputStream): Digest = new Digest(stream)
+  class DigestAskForData {
+    def data(stream: InputStream): DigestOperation = new DigestOperation(stream)
   }
 
-  class HMAC(
-      _stream: InputStream,
-      _key: Key,
-      _algorithm: String = Digests.DefaultHMACAlgorithm,
-      _provider: Option[Any] = None,
-      _handler: StreamHandler = NullStreamHandler) extends Writeable {
+  def digest: DigestAskForData = new DigestAskForData
 
-    def algorithm(algorithm: String): HMAC =
-      new HMAC(this._stream, this._key, algorithm, this._provider, this._handler)
+  class HMACOperation(
+      stream: InputStream,
+      key: Key,
+      algorithm: String = Digests.DefaultHMACAlgorithm,
+      provider: Option[Any] = None,
+      handler: StreamHandler = NullStreamHandler) extends Writeable {
 
-    def provider(provider: Any): HMAC =
-      new HMAC(this._stream, this._key, this._algorithm, Option(provider), this._handler)
+    def withAlgorithm(algorithm: String): HMACOperation =
+      new HMACOperation(stream, key, algorithm, provider, handler)
 
-    def streamHandler(handler: StreamHandler): HMAC =
-      new HMAC(this._stream, this._key, this._algorithm, this._provider, handler)
+    def withProvider(provider: Any): HMACOperation =
+      new HMACOperation(stream, key, algorithm, Option(provider), handler)
+
+    def withStreamHandler(handler: StreamHandler): HMACOperation =
+      new HMACOperation(stream, key, algorithm, provider, handler)
 
     def to[T <: OutputStream](out: T): T = {
-      val mac = _provider match {
+      val mac = provider match {
         case Some(value) =>
           value match {
-            case p:Provider => Mac.getInstance(_algorithm, p)
-            case s => Mac.getInstance(_algorithm, s.toString)
+            case p:Provider => Mac getInstance(algorithm, p)
+            case s => Mac getInstance(algorithm, s.toString)
           }
-        case None => Mac.getInstance(_algorithm)
+        case None => Mac getInstance(algorithm)
       }
 
-      mac.init(_key)
+      mac init(key)
 
-      _handler(
+      handler(
         new FunctionFilterStream(
-          _stream,
-          (b: Byte) => mac.update(b),
-          Option((a: Array[Byte], off: Int, len: Int) => mac.update(a, off, len))))
+          stream,
+          (b: Byte) => mac update(b),
+          Option((a: Array[Byte], off: Int, len: Int) => mac update(a, off, len))))
 
-      out.write(mac.doFinal)
+      out write(mac.doFinal)
       out
     }
   }
 
-  class HMACKeyNext(stream: InputStream) {
-    def using(key: Key): HMAC = new HMAC(stream, key)
+  class HMACAskForKey(stream: InputStream) {
+    def using(key: Key): HMACOperation = new HMACOperation(stream, key)
   }
 
-  class HMACDataNext {
-    def data(stream: InputStream): HMACKeyNext = new HMACKeyNext(stream)
+  class HMACAskForData {
+    def data(stream: InputStream): HMACAskForKey = new HMACAskForKey(stream)
   }
 
-  def digest: DigestDataNext = new DigestDataNext
-  def hmac: HMACDataNext = new HMACDataNext
+  def hmac: HMACAskForData = new HMACAskForData
 }

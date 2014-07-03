@@ -37,13 +37,13 @@ class DigestsSpec extends FlatSpec with Matchers with Digests {
 
   "Digest" should "be able to digest data with specific algorithm" in {
     val alg = "SHA-1"
-    assertDigest(digest data str algorithm alg toBytes, alg = alg)
+    assertDigest(digest data str withAlgorithm alg toBytes, alg = alg)
   }
 
   "Digest" should "be able to digest data with a stream handler" in {
     val out = new ByteArrayOutputStream()
 
-    assertDigest(digest data str streamHandler copyHandler(out) toBytes)
+    assertDigest(digest data str withStreamHandler copyHandler(out) toBytes)
     str.getBytes should equal (out.toByteArray)
   }
 
@@ -55,7 +55,7 @@ class DigestsSpec extends FlatSpec with Matchers with Digests {
   "HMAC" should "be able to digest data with specific algorithm" in {
     val k = Generators.key()
     val alg = "HmacSHA1"
-    assertHMAC(k, hmac data str using k algorithm alg toBytes, alg = alg)
+    assertHMAC(k, hmac data str using k withAlgorithm alg toBytes, alg = alg)
   }
 
   "HMAC" should "be able to digest data with a stream handler" in {
@@ -64,7 +64,7 @@ class DigestsSpec extends FlatSpec with Matchers with Digests {
 
     val out = new ByteArrayOutputStream()
 
-    assertHMAC(k, hmac data str using k algorithm alg streamHandler copyHandler(out) toBytes, alg = alg)
+    assertHMAC(k, hmac data str using k withAlgorithm alg withStreamHandler copyHandler(out) toBytes, alg = alg)
     str.getBytes should equal (out.toByteArray)
   }
 

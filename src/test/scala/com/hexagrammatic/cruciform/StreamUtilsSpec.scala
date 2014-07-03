@@ -13,7 +13,7 @@ import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 
 
-class StreamUtilsSpec extends FlatSpec with Matchers {
+class StreamUtilsSpec extends FlatSpec with Matchers with StreamConversions {
 
   def randomInt = scala.util.Random.nextInt
 
@@ -38,7 +38,7 @@ class StreamUtilsSpec extends FlatSpec with Matchers {
 
   "Stream utils" should "be able to convert a string to a stream" in {
     val data = "Hello World"
-    val in = toStream(data)
+    val in = toInputStream(data)
     val out = new ByteArrayOutputStream
     
     copyHandler(out)(in)
@@ -48,17 +48,7 @@ class StreamUtilsSpec extends FlatSpec with Matchers {
 
   "Stream utils" should "be able to convert a byte array to a stream" in {
     val data = "Hello World"
-    val in = toStream(data.getBytes)    
-    val out = new ByteArrayOutputStream
-    
-    copyHandler(out)(in)
-    
-    (out.toByteArray.deep) should equal (data.getBytes.deep)
-  }
-
-  "Stream utils" should "'convert' a stream to a stream" in {
-    val data = "Hello World"
-    val in = toStream(new ByteArrayInputStream(data.getBytes))    
+    val in = toInputStream(data.getBytes)
     val out = new ByteArrayOutputStream
     
     copyHandler(out)(in)
@@ -68,7 +58,7 @@ class StreamUtilsSpec extends FlatSpec with Matchers {
 
   "Stream utils" should "be able to convert a char array to a stream" in {
     val data = "Hello World"
-    val in = toStream(data.toCharArray)    
+    val in = toInputStream(data.toCharArray)
     val out = new ByteArrayOutputStream
     
     copyHandler(out)(in)
@@ -82,7 +72,7 @@ class StreamUtilsSpec extends FlatSpec with Matchers {
  
   "Stream utils" should "be able to convert a streamable to a stream" in {
     val data = "Hello World"
-    val in = toStream(new TestingReadable(data))
+    val in = toInputStream(new TestingReadable(data))
     val out = new ByteArrayOutputStream
     
     copyHandler(out)(in)
@@ -92,7 +82,7 @@ class StreamUtilsSpec extends FlatSpec with Matchers {
 
   "Stream utils" should "be able to convert a serializable to a stream" in {
     val serialized = new TestSerializable(randomInt)
-    val in = toStream(serialized)
+    val in = toInputStream(serialized)
     val out = new ByteArrayOutputStream
 
     copyHandler(out)(in)
@@ -111,7 +101,7 @@ class StreamUtilsSpec extends FlatSpec with Matchers {
     val f = (b: Byte) => count.incrementAndGet
     val out = new ByteArrayOutputStream
 
-    copyHandler(out)(new FunctionFilterStream(toStream(data), f))
+    copyHandler(out)(new FunctionFilterStream(toInputStream(data), f))
 
     (count.get) should equal (data.length)
   }
@@ -125,7 +115,7 @@ class StreamUtilsSpec extends FlatSpec with Matchers {
 
     val out = new ByteArrayOutputStream
 
-    copyHandler(out)(new FunctionFilterStream(toStream(data), byteFunc, Option(bufferFunc)))
+    copyHandler(out)(new FunctionFilterStream(toInputStream(data), byteFunc, Option(bufferFunc)))
 
     (byteUseCount.get) should equal (0)
     (bufferUseCount.get) should be > (0)

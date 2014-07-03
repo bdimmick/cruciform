@@ -1,13 +1,9 @@
 package com.hexagrammatic.cruciform
 
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import java.io.FilterInputStream
-import java.io.InputStream
-import java.io.ObjectOutputStream
-import java.io.OutputStream
+import java.io._
 
 import org.apache.commons.io.IOUtils.copy
+import scala.Serializable
 
 
 /**
@@ -23,18 +19,32 @@ trait Writeable {
   override def toString: String = new String(toBytes)
 }
 
+/**
+ * Provides functionality to convert the provided object to a stream for use in cryptographic operations.
+ * The input conversion rules are as follows, in the following order:
+ *   * `Streamable` objects have the result of their `toStream` method returned
+ *   * `InputStream`s are returned as-is
+ *   * `File`s are opened as a FileInputStream.
+ *   * `String`s return a stream of their bytes in the platform's default charset
+ *   * `Array[Byte]`s return a stream of the provided array
+ *   * `Array[Char]`s  return a stream of their bytes in the platform's default charset
+ *   * `Serializable`s return a stream of bytes as written to an ObjectOutputStream
+ */
 trait StreamConversions {
-  implicit def toStream(s: String): InputStream = new ByteArrayInputStream(s.getBytes)
-  implicit def toStream(x: Readable): InputStream = x.stream
-  implicit def toStream(a: Array[Byte]): InputStream = new ByteArrayInputStream(a)
-  implicit def toStream(a: Array[Char]): InputStream = new ByteArrayInputStream(new String(a).getBytes)
-  implicit def toStream(s: Serializable): InputStream = {
+  implicit def toOutputStream(f: File): OutputStream = new FileOutputStream(f)
+  implicit def toInputStream(s: String): InputStream = new ByteArrayInputStream(s.getBytes)
+  implicit def toInputStream(x: Readable): InputStream = x.stream
+  implicit def toInputStream(a: Array[Byte]): InputStream = new ByteArrayInputStream(a)
+  implicit def toInputStream(a: Array[Char]): InputStream = new ByteArrayInputStream(new String(a).getBytes)
+  implicit def toInputStream(f: File): InputStream = new FileInputStream(f)
+  implicit def toInputStream(s: Serializable): InputStream = {
     val bstream = new ByteArrayOutputStream
     val ostream = new ObjectOutputStream(bstream)
     ostream.writeObject(s)
     ostream.flush
     new ByteArrayInputStream(bstream.toByteArray)
   }
+  /* TODO(me@billdimmick.com): Add Thrift Support? */
 }
 
 /**
@@ -63,41 +73,6 @@ object StreamUtils {
   def copyHandler(o: OutputStream): StreamHandler = {
     (i: InputStream) => {
       copy(i, o)
-    }
-  }
-
-  /**
-   * Converts the provided object to a stream for use in cryptographic operations.
-   * The conversion rules are as follows, in the following order:
-   *   * `Streamable` objects have the result of their `toStream` method returned
-   *   * `InputStream`s are returned as-is
-   *   * `String`s return a stream of their bytes in the platform's default charset
-   *   * `Array[Byte]`s return a stream of the provided array
-   *   * `Array[Char]`s  return a stream of their bytes in the platform's default charset
-   *   * `Serializable`s return a stream of bytes as written to an ObjectOutputStream
-   * @param data the object to convert
-   * @return the stream
-   * @throws IllegalArgumentException if the object cannot be converted to a stream
-   */
-  def toStream(data: Any): InputStream = {
-    data match {
-      case x: Readable => x.stream
-      case i: InputStream => i
-      case s: String => new ByteArrayInputStream(s.getBytes)
-      case a: Array[Byte] => new ByteArrayInputStream(a)
-      case a: Array[Char] => new ByteArrayInputStream(new String(a).getBytes)
-      case s: Serializable => {
-        val bstream = new ByteArrayOutputStream
-        val ostream = new ObjectOutputStream(bstream)
-        ostream.writeObject(s)
-        ostream.flush
-        new ByteArrayInputStream(bstream.toByteArray)
-      }
-      /* TODO(me@billdimmick.com): Add Thrift Support? */
-      case _ => {
-        val message = String.format("Cannot create stream for object of type %s", data.getClass)
-        throw new IllegalArgumentException(message)
-      }
     }
   }
 
