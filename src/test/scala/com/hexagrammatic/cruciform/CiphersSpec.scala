@@ -18,7 +18,7 @@ class CiphersSpec extends FlatSpec with Matchers with MockFactory with Ciphers {
     (str.getBytes) should equal (plaintext)
   }
 
-  "Ciphers" should "be able to use key and data in any order" in {
+  "Ciphers" should "be able to use key and data in any order for encrypt and decrypt" in {
     val key = Generators.key()
     val ivStream1 = new ByteArrayOutputStream()
     val ivStream2 = new ByteArrayOutputStream()
@@ -129,4 +129,14 @@ class CiphersSpec extends FlatSpec with Matchers with MockFactory with Ciphers {
     (verify signature sig using keypair withAlgorithm "MD5withRSA" from str) should equal (false)
   }
 
+  "Ciphers" should "be able to use key and data in any order for sign and verify" in {
+    val keypair = Generators.keypair()
+
+    val sig1 = sign data str using keypair toBytes
+    val sig2 = sign using keypair data str toBytes
+
+    (verify signature sig1 using keypair from str) should equal (true)
+    (verify signature sig2 using keypair from str) should equal (true)
+    (verify using keypair signature sig1 from str) should equal (true)
+  }
 }

@@ -199,11 +199,17 @@ trait Ciphers extends StreamConversions {
     def using(pair: KeyPair): SignOperation = this using pair.getPrivate
   }
 
-  class SignAskForData {
-    def data(data: InputStream): SignAskForKey = new SignAskForKey(data)
+  class SignAskForData(key: PrivateKey) {
+    def data(data: InputStream): SignOperation = new SignOperation(data, key)
   }
 
-  def sign: SignAskForData = new SignAskForData
+  class SignAskForDataOrKey {
+    def data(data: InputStream): SignAskForKey = new SignAskForKey(data)
+    def using(key: PrivateKey): SignAskForData = new SignAskForData(key)
+    def using(pair: KeyPair): SignAskForData = this using pair.getPrivate
+  }
+
+  def sign: SignAskForDataOrKey = new SignAskForDataOrKey
 
   class VerifyOperation(
     signature: InputStream,
@@ -240,9 +246,16 @@ trait Ciphers extends StreamConversions {
     def using(pair: KeyPair): VerifyOperation = this using pair.getPublic
   }
 
-  class VerifyAskForSignature {
-    def signature(signature: InputStream): VerifyAskForKey = new VerifyAskForKey(signature)
+  class VerifyAskForSignature(key: PublicKey) {
+    def signature(signature: InputStream): VerifyOperation = new VerifyOperation(signature, key)
   }
 
-  def verify: VerifyAskForSignature = new VerifyAskForSignature
+  class VerifyAskForSignatureOrKey {
+    def signature(signature: InputStream): VerifyAskForKey = new VerifyAskForKey(signature)
+    def using(cert: Certificate): VerifyAskForSignature = this using cert.getPublicKey
+    def using(key: PublicKey): VerifyAskForSignature = new VerifyAskForSignature(key)
+    def using(pair: KeyPair): VerifyAskForSignature = this using pair.getPublic
+  }
+
+  def verify: VerifyAskForSignatureOrKey = new VerifyAskForSignatureOrKey
 }
