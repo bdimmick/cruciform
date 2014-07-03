@@ -109,7 +109,7 @@ class CiphersSpec extends FlatSpec with Matchers with MockFactory with Ciphers {
     // Valid verification with paired key
     (verify signature sig using keypair from str) should equal (true)
 
-    // Invalid verificiation with different key
+    // Invalid verification with different key
     (verify signature sig using Generators.keypair() from str) should equal (false)
   }
 
@@ -122,10 +122,10 @@ class CiphersSpec extends FlatSpec with Matchers with MockFactory with Ciphers {
     // Valid verification with paired key
     (verify signature sig using keypair withAlgorithm algorithm from str) should equal (true)
 
-    // Invalid verificiation with different key
+    // Invalid verification with different key
     (verify signature sig using Generators.keypair() withAlgorithm algorithm from str) should equal (false)
 
-    // Invalid verificiation with different algorithm
+    // Invalid verification with different algorithm
     (verify signature sig using keypair withAlgorithm "MD5withRSA" from str) should equal (false)
   }
 
