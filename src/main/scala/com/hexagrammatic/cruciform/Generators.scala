@@ -8,82 +8,68 @@ import java.security.Provider
 import javax.crypto.KeyGenerator
 
 
-/**
- *
- */
-object Generators {
+trait KeyGenerators {
+  class Strength(val value: Int) { def bit: Strength = this }
+  implicit def strengthFromInt(str: Int): Strength = new Strength(str)
 
-  val DefaultAsymmetricAlgorithm = "RSA"
-  val DefaultSymmetricAlgorithm = "AES"
+  sealed class SymmetricType(
+      val algorithm: String,
+      val strength: Option[Strength] = None,
+      val provider: Option[Any] = None) {
 
-  def key(
-    algorithm: String = DefaultSymmetricAlgorithm,
-    strength: Option[Int] = None,
-    provider: Option[Any] = None): Key =
-    new SymmetricKeyGenerator(algorithm, strength, provider).generate
-
-  def keypair(
-    algorithm: String = DefaultAsymmetricAlgorithm,
-    strength: Option[Int] = None,
-    provider: Option[Any] = None): KeyPair =
-    new AsymmetricKeyGenerator(algorithm, strength, provider).generate
-}
-
-import Generators.DefaultAsymmetricAlgorithm
-import Generators.DefaultSymmetricAlgorithm
-
-/**
- *
- */
-class SymmetricKeyGenerator(
-  algorithm: String = DefaultSymmetricAlgorithm,
-  strength: Option[Int] = None,
-  provider: Option[Any] = None) {
-
-  private [this] val generator = provider match {
-    case None => KeyGenerator.getInstance(algorithm)
-    case Some(value) => {
-      value match {
-        case p: Provider => KeyGenerator.getInstance(algorithm, p)
-        case str => KeyGenerator.getInstance(algorithm, str.toString)
+    def strength(strength: Strength): SymmetricType = new SymmetricType(algorithm, Option(strength), provider)
+    def withProvider(provider: Any): SymmetricType = new SymmetricType(algorithm, strength, Option(provider))
+    def key: Key = {
+      val generator = provider match {
+        case None => KeyGenerator.getInstance(algorithm)
+        case Some(value) => {
+          value match {
+            case p: Provider => KeyGenerator.getInstance(algorithm, p)
+            case str => KeyGenerator.getInstance(algorithm, str.toString)
+          }
+        }
       }
-    }
-  }
 
-  {
-    strength match {
-      case Some(str) => generator.init(str)
-      case None =>
-    }
-  }
-
-  def generate: Key = generator.generateKey
-}
-
-/**
- *
- */
-class AsymmetricKeyGenerator(
-  algorithm: String = DefaultAsymmetricAlgorithm,
-  strength: Option[Int] = None,
-  provider: Option[Any] = None) {
-
-  private [this] val generator = provider match {
-    case None => KeyPairGenerator.getInstance(algorithm)
-    case Some(value) => {
-      value match {
-        case p: Provider => KeyPairGenerator.getInstance(algorithm, p)
-        case str => KeyPairGenerator.getInstance(algorithm, str.toString)
+      strength match {
+        case Some(str) => generator.init(str.value)
+        case None =>
       }
+
+      generator.generateKey
     }
   }
 
-  {
-    strength match {
-      case Some(str) => generator.initialize(str)
-      case None =>
+  sealed class AsymmetricType(
+      val algorithm: String,
+      val strength: Option[Strength] = None,
+      val provider: Option[Any] = None) {
+
+    def strength(strength: Strength): AsymmetricType = new AsymmetricType(algorithm, Option(strength), provider)
+    def withProvider(provider: Any): AsymmetricType = new AsymmetricType(algorithm, strength, Option(provider))
+    def keypair: KeyPair = {
+      val generator = provider match {
+        case None => KeyPairGenerator.getInstance(algorithm)
+        case Some(value) => {
+          value match {
+            case p: Provider => KeyPairGenerator.getInstance(algorithm, p)
+            case str => KeyPairGenerator.getInstance(algorithm, str.toString)
+          }
+        }
+      }
+
+      strength match {
+        case Some(str) => generator.initialize(str.value)
+        case None =>
+      }
+
+      generator.generateKeyPair
     }
   }
 
-  def generate: KeyPair = generator.generateKeyPair
+  object AES extends SymmetricType("AES")
+  object Blowfish extends SymmetricType("Blowfish")
+  object DES extends SymmetricType("DES")
+
+  object DSA extends AsymmetricType("DSA")
+  object RSA extends AsymmetricType("RSA")
 }

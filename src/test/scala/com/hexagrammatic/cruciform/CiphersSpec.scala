@@ -9,7 +9,7 @@ import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 
 
-class CiphersSpec extends FlatSpec with Matchers with MockFactory with Ciphers {
+class CiphersSpec extends FlatSpec with Matchers with MockFactory with Ciphers with KeyGenerators {
 
   val str = "Hello World"
 
@@ -19,7 +19,7 @@ class CiphersSpec extends FlatSpec with Matchers with MockFactory with Ciphers {
   }
 
   "Ciphers" should "be able to use key and data in any order for encrypt and decrypt" in {
-    val key = Generators.key()
+    val key = AES key
     val ivStream1 = new ByteArrayOutputStream()
     val ivStream2 = new ByteArrayOutputStream()
 
@@ -38,7 +38,7 @@ class CiphersSpec extends FlatSpec with Matchers with MockFactory with Ciphers {
   }
 
   "Ciphers" should "be able to perform AES encryption with defaults" in {
-    val key = Generators.key()
+    val key = AES key
     val ivStream = new ByteArrayOutputStream()
     
     val ciphertext = encrypt data str using key writeInitVectorTo ivStream toBytes
@@ -49,7 +49,7 @@ class CiphersSpec extends FlatSpec with Matchers with MockFactory with Ciphers {
 
   "Ciphers" should "be able to perform AES encryption with ECB without init vector" in {
     val alg = "AES/ECB/PKCS5Padding"
-    val key = Generators.key()
+    val key = AES key
 
     val ciphertext = encrypt data str using key withAlgorithm alg toBytes
     val plaintext = decrypt data ciphertext using key withAlgorithm alg toBytes
@@ -58,7 +58,7 @@ class CiphersSpec extends FlatSpec with Matchers with MockFactory with Ciphers {
   }
 
   "Ciphers" should "be able to perform DES encryption with defaults" in {
-    val key = Generators.key("DES")
+    val key = DES key
     val ivStream = new ByteArrayOutputStream()
     
     val ciphertext = encrypt data str using key writeInitVectorTo ivStream toBytes
@@ -68,16 +68,13 @@ class CiphersSpec extends FlatSpec with Matchers with MockFactory with Ciphers {
   }
 
   "Ciphers" should "throw an exception if an IV is created and no handler is specified" in {
-    val alg = "AES/CBC/PKCS5Padding"
-    val key = Generators.key()
-
     intercept[IllegalArgumentException] {
-      encrypt data str using key withAlgorithm alg to new ByteArrayOutputStream()
+      encrypt data str using (AES key) withAlgorithm "AES/CBC/PKCS5Padding" to new ByteArrayOutputStream()
     }
   }
 
   "Ciphers" should "be able to perform RSA encryption" in {
-    val keypair = Generators.keypair()
+    val keypair = RSA keypair
 
     val ciphertext = encrypt data str using keypair toBytes
     val plaintext = decrypt data ciphertext using keypair toBytes
@@ -87,7 +84,7 @@ class CiphersSpec extends FlatSpec with Matchers with MockFactory with Ciphers {
 
   "Ciphers" should "throw an exception with an illegal specified algorithm in encrypt" in {
     intercept[NoSuchAlgorithmException] {
-      encrypt data str using Generators.key() withAlgorithm "BAD" to new ByteArrayOutputStream()
+      encrypt data str using (AES key) withAlgorithm "BAD" to new ByteArrayOutputStream()
     }
   }
 
@@ -102,7 +99,7 @@ class CiphersSpec extends FlatSpec with Matchers with MockFactory with Ciphers {
   }
 
   "Ciphers" should "be able to sign and verify data with defaults" in {
-    val keypair = Generators.keypair()
+    val keypair = RSA keypair
 
     val sig = sign data str using keypair toBytes
 
@@ -110,11 +107,11 @@ class CiphersSpec extends FlatSpec with Matchers with MockFactory with Ciphers {
     (verify signature sig using keypair from str) should equal (true)
 
     // Invalid verification with different key
-    (verify signature sig using Generators.keypair() from str) should equal (false)
+    (verify signature sig using (RSA keypair) from str) should equal (false)
   }
 
   "Ciphers" should "be able to sign and verify data with RSA and specifics" in {
-    val keypair = Generators.keypair()
+    val keypair = RSA keypair
     val algorithm = "SHA1withRSA"
 
     val sig = sign data str using keypair withAlgorithm algorithm toBytes
@@ -123,14 +120,14 @@ class CiphersSpec extends FlatSpec with Matchers with MockFactory with Ciphers {
     (verify signature sig using keypair withAlgorithm algorithm from str) should equal (true)
 
     // Invalid verification with different key
-    (verify signature sig using Generators.keypair() withAlgorithm algorithm from str) should equal (false)
+    (verify signature sig using (RSA keypair) withAlgorithm algorithm from str) should equal (false)
 
     // Invalid verification with different algorithm
     (verify signature sig using keypair withAlgorithm "MD5withRSA" from str) should equal (false)
   }
 
   "Ciphers" should "be able to use key and data in any order for sign and verify" in {
-    val keypair = Generators.keypair()
+    val keypair = RSA keypair
 
     val sig1 = sign data str using keypair toBytes
     val sig2 = sign using keypair data str toBytes

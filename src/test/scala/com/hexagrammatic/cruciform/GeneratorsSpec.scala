@@ -1,127 +1,53 @@
 package com.hexagrammatic.cruciform
 
-import Generators._
-
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 
-import java.security.InvalidParameterException
-import java.security.KeyPair
-import java.security.NoSuchAlgorithmException
 
+class GeneratorsSpec extends FlatSpec with Matchers with KeyGenerators {
 
-class GeneratorsSpec extends FlatSpec with Matchers {
-
-  "Key generator" should "be able to generate a key with no params" in {
-    val generator = new SymmetricKeyGenerator()
-    val key = generator.generate
-    
-    key should not be null    
-    key should not equal (generator.generate)
+  "AES generator" should "be able to generate a key with defaults" in {
+    ((AES key).getAlgorithm) should equal ("AES")
   }
 
-  "Key generator" should "be able to generate a key with algorithm and strength" in {
-    val str = 56
-    val alg = "DES"
-    val generator = new SymmetricKeyGenerator(alg, strength = Option(str))
-    val key = generator.generate
-        
-    key should not be null
-    key.getAlgorithm should equal (alg)
-    key should not equal (generator.generate)
+  "DES generator" should "be able to generate a key with defaults" in {
+    ((DES key).getAlgorithm) should equal ("DES")
   }
 
-  "Key generator" should "be able to generate a key with just strength" in {
+  "Blowfish generator" should "be able to generate a key with defaults" in {
+    ((Blowfish key).getAlgorithm) should equal ("Blowfish")
+  }
+
+  "In general, key generators" should "be able to generate a key with a strength" in {
     val str = 128
-    val generator = new SymmetricKeyGenerator(strength = Option(str))
-    val key = generator.generate
-    
-    key should not be null
-    key should not equal (generator.generate)
-    key.getEncoded.length should equal (str / 8)
-  }
+    val k = AES strength(str bit) key
 
-  "Key generator function" should "be able to generate a key with no params" in {
-    key should not be null
-  }
-
-  "Key generator function" should "be able to generate a key with algorithm and strength" in {
-    val str = 56
-    val alg = "DES"
-    val k = Generators.key(alg, strength = Option(str))
-    
-    k.getAlgorithm should equal (alg)
-  }
-
-  "Key generator function" should "be able to generate a key with just strength" in {
-    val str = 128
-    val k = Generators.key(strength = Option(str))
-    
+    ((AES key).getAlgorithm) should equal ("AES")
     k.getEncoded.length should equal (str / 8)
   }
 
-  "Key generator function" should "fail with invalid strength" in {
-    an [InvalidParameterException] should be thrownBy Generators.key(strength = Option(17))
-  }
-
-  "Key generator function" should "fail with invalid algorithm" in {    
-    an [NoSuchAlgorithmException] should be thrownBy Generators.key(algorithm = "BAD")
-  }
-  
-  "Keypair generator" should "be able to generate a keypair with no params" in {
-    val generator = new AsymmetricKeyGenerator()
-    val pair = generator.generate
+  "RSA generator" should "be able to generate a keypair with no params" in {
+    val pair = RSA keypair
     
     pair should not be null
     pair.getPrivate should not be null
     pair.getPublic should not be null
   }
 
-  "Keypair generator" should "be able to generate a keypair with just strength" in {
-    val generator = new AsymmetricKeyGenerator(strength = Option(1024))
-    val pair = generator.generate
-    
+  "DSA generator" should "be able to generate a keypair with no params" in {
+    val pair = DSA keypair
+
     pair should not be null
     pair.getPrivate should not be null
     pair.getPublic should not be null
   }
 
-  "Keypair generator" should "be able to generate a keypair with algorithm" in {
-    val alg = "DSA"
-    val generator = new AsymmetricKeyGenerator(alg)
-    val pair = generator.generate
-    
-    pair should not be null
-    pair.getPrivate should not be null
-    pair.getPublic should not be null
-    pair.getPrivate.getAlgorithm should equal (alg)
-    pair.getPublic.getAlgorithm should equal (alg)
-  }
-  
-  "Keypair generator function" should "be able to generate a keypair with no params" in {
-    val pair = keypair()
-    
-    pair should not be null
-    pair.getPrivate should not be null
-    pair.getPublic should not be null
-  }
+  "In general, keypair generators" should "be able to generate a keypair with strength" in {
+    val str = 1024
+    val pair = RSA strength(str bit) keypair
 
-  "Keypair generator function" should "be able to generate a keypair with just strength" in {
-    val pair = keypair(strength = Option(1024))
-    
     pair should not be null
     pair.getPrivate should not be null
     pair.getPublic should not be null
-  }
-
-  "Keypair generator function" should "be able to generate a keypair with algorithm" in {
-    val alg = "DSA"
-    val pair = keypair(alg)
-    
-    pair should not be null
-    pair.getPrivate should not be null
-    pair.getPublic should not be null
-    pair.getPrivate.getAlgorithm should equal (alg)
-    pair.getPublic.getAlgorithm should equal (alg)
   }
 }

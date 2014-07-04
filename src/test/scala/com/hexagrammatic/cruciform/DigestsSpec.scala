@@ -13,7 +13,7 @@ import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 
 
-class DigestsSpec extends FlatSpec with Matchers with Digests {
+class DigestsSpec extends FlatSpec with Matchers with Digests with KeyGenerators {
 
   val str = "Hello World"
 
@@ -48,18 +48,19 @@ class DigestsSpec extends FlatSpec with Matchers with Digests {
   }
 
   "HMAC" should "be able to digest data with default parameters" in {
-    val k = Generators.key()
+    val k = AES key
+
     assertHMAC(k, hmac data str using k toBytes)
   }
 
   "HMAC" should "be able to digest data with specific algorithm" in {
-    val k = Generators.key()
+    val k = AES key
     val alg = "HmacSHA1"
     assertHMAC(k, hmac data str using k withAlgorithm alg toBytes, alg = alg)
   }
 
   "HMAC" should "be able to digest data with a stream handler" in {
-    val k = Generators.key()
+    val k = AES key
     val alg = "HmacSHA1"
 
     val out = new ByteArrayOutputStream()
@@ -69,7 +70,7 @@ class DigestsSpec extends FlatSpec with Matchers with Digests {
   }
 
   "HMAC" should "be able to use key and data in any order" in {
-    val k = Generators.key()
+    val k = AES key
     val hmac1 = hmac data str using k toBytes
     val hmac2 = hmac using k data str toBytes
 
