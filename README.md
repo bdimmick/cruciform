@@ -64,7 +64,3 @@ in close
 out close
 ```
 
-
-#### Operations
-
-
