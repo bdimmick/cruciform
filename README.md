@@ -44,19 +44,19 @@ Trait: `com.hexagrammatic.cruciform.Ciphers`
 
 Notes: 
 + If a `withAlgorithm` is ommited, the language will pick the most appropriate one for the key type:
-..+ AES uses `AES/CBC/PKCS5Padding`
-..+ DES uses `DES/CBC/PKCS5Padding`
-..+ RSA uses `RSA/ECB/PKCS1Padding` 
+  + AES uses `AES/CBC/PKCS5Padding`
+  + DES uses `DES/CBC/PKCS5Padding`
+  + RSA uses `RSA/ECB/PKCS1Padding` 
 + In the `encrypt`, `decrypt`, and `sign` operations, `data <data>` and the `key <key>` may be switched if desired.
 + Instead of `to <stream>`, `toBytes` to `toString` may be used to return raw bytes or a string in the above operations.
 + The `<data>` value may be one of the following:
-..+ `InputStream`
-..+ `Serializable`
-..+ `String`
-..+ `Array[Bytes]
-..+ `Array[Char]`
-..+ `File`
-..+ `Readable`
+  + `InputStream`
+  + `Serializable`
+  + `String`
+  + `Array[Bytes]
+  + `Array[Char]`
+  + `File`
+  + `Readable`
 
 
 ##### Digest Operations
