@@ -1,12 +1,12 @@
-cruciform: A Scala DSL for cryptographic operations
-===================================================
+### cruciform: A Scala DSL for cryptographic operations
 
-Examples and Comparisons
-------------------------
+---
 
-*SHA256 Digest of a File:*
+#### Examples and Comparisons
 
-JCE:
+##### SHA256 Digest of a File:
+
+###### JCE:
 ```Scala
 val target = new File("target")
 val digestor = MessageDigest.getInstance("SHA-256")
@@ -18,7 +18,7 @@ while (-1 != in.read(buffer)) {}
 val digest = digestor.digest
 ```
 
-Cruciform:
+###### Cruciform:
 ```Scala
 val target = new File("target")
 val sha = digest data target withAlgorithm("SHA-256") toBytes
@@ -26,21 +26,21 @@ val sha = digest data target withAlgorithm("SHA-256") toBytes
 
 *Symmetric Key Generation:*
 
-JCE:
+###### JCE:
 ```Scala
 val generator = KeyGenerator.getInstance("AES")
 generator.init(128)
 val key = generator.generateKey
 ```
 
-Cruciform:
+###### Cruciform:
 ```Scala
 val key = AES strength(128 bit) key
 ```
 
-*Symmetric Encryption of a File:*
+##### Symmetric Encryption of a File:
 
-JCE:
+###### JCE:
 ```Scala
 val in = new File("plaintext")
 val out = new File("ciphertext")
@@ -54,7 +54,7 @@ in.close()
 out.close()
 ```
 
-Cruciform:
+###### Cruciform:
 ```Scala
 val in = new File("plaintext")
 val out = new File("ciphertext")
@@ -65,7 +65,6 @@ out close
 ```
 
 
-Operations
-----------
+#### Operations
 
 
