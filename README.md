@@ -109,6 +109,8 @@ Notes:
   + `OutputStream`
   + `File`
 + Instead of `to <stream>`, `toBytes` to `toString` may be used to return raw bytes or a string in the above operations.
+
+
 ---
 
 #### Comparison with JCE
