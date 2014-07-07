@@ -1,8 +1,31 @@
 ### cruciform: A Scala DSL for cryptographic operations
 
+#### Usage
+
+Cruciform provides functionality through traits that are mixed into the classes and objects that need to perform cryptographic operations.
+
+##### Key Generation
+
+*Trait:* `com.hexagrammatic.cruciform.KeyGenerators`
+
+###### Provides:
+
+
+##### Digest Operations
+
+*Trait:* `com.hexagrammatic.cruciform.Digests`
+
+###### Provides:
+
+##### Cipher Operations
+
+*Trait:* `com.hexagrammatic.cruciform.Ciphers`
+
+###### Provides:
+
 ---
 
-#### Examples and Comparisons
+#### Comparison with JCE
 
 ##### SHA256 Digest of a File:
 
