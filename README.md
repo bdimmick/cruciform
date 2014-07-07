@@ -33,17 +33,35 @@ object Example extends KeyGenerators {
 
 ```
 
-##### Digest Operations
-
-Trait: `com.hexagrammatic.cruciform.Digests`
-
-###### Provides:
-+ `encrypt data *data* using *key* [withAlgorithm(algorithm)] [withProvider(provider)]`
-
-
 ##### Cipher Operations
 
 Trait: `com.hexagrammatic.cruciform.Ciphers`
+
+###### Provides:
++ `encrypt data <data> using <key> [withAlgorithm(algorithm)] [withProvider(provider)] [writeInitVectorTo(stream)] [storeInitVectorWith(f)] to <stream>`
++ `decrypt data <data> using <key> [withAlgorithm(algorithm)] [withProvider(provider)] [withInitVector(iv)] to <stream>`
++ `sign data <data> using <keypair> [withAlgorithm(algorithm)] [withProvider(provider)] to <stream>`
+
+Notes: 
++ If a `withAlgorithm` is ommited, the language will pick the most appropriate one for the key type:
+..+ AES uses `AES/CBC/PKCS5Padding`
+..+ DES uses `DES/CBC/PKCS5Padding`
+..+ RSA uses `RSA/ECB/PKCS1Padding` 
++ In the `encrypt`, `decrypt`, and `sign` operations, `data <data>` and the `key <key>` may be switched if desired.
++ Instead of `to <stream>`, `toBytes` to `toString` may be used to return raw bytes or a string in the above operations.
++ The `<data>` value may be one of the following:
+..+ `InputStream`
+..+ `Serializable`
+..+ `String`
+..+ `Array[Bytes]
+..+ `Array[Char]`
+..+ `File`
+..+ `Readable`
+
+
+##### Digest Operations
+
+Trait: `com.hexagrammatic.cruciform.Digests`
 
 ###### Provides:
 
