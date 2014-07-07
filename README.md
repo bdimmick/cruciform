@@ -1,25 +1,49 @@
 ### cruciform: A Scala DSL for cryptographic operations
 
+---
+
 #### Usage
 
 Cruciform provides functionality through traits that are mixed into the classes and objects that need to perform cryptographic operations.
 
 ##### Key Generation
 
-*Trait:* `com.hexagrammatic.cruciform.KeyGenerators`
+Trait: `com.hexagrammatic.cruciform.KeyGenerators`
 
 ###### Provides:
 
+Symmetric Key Generation
++ `AES [strength(bits)] [withProvider(provider)] key`
++ `Blowfish [strength(bits)] [withProvider(provider)] key`
++ `DES [strength(bits)] [withProvider(provider)] key`
+
+Asymmetric Keypair Generation
++ `DSA [strength(bits)] [withProvider(provider)] keypair`
++ `RSA [strength(bits)] [withProvider(provider)] keypair`
+
+###### Example
+
+```Scala
+import com.hexagrammatic.cruciform.KeyGenerators
+
+object Example extends KeyGenerators {
+  val key = AES key
+  val keypair = RSA strength(1024 bit) keypair
+}
+
+```
 
 ##### Digest Operations
 
-*Trait:* `com.hexagrammatic.cruciform.Digests`
+Trait: `com.hexagrammatic.cruciform.Digests`
 
 ###### Provides:
++ `encrypt data *data* using *key* [withAlgorithm(algorithm)] [withProvider(provider)]`
+
 
 ##### Cipher Operations
 
-*Trait:* `com.hexagrammatic.cruciform.Ciphers`
+Trait: `com.hexagrammatic.cruciform.Ciphers`
 
 ###### Provides:
 
