@@ -40,31 +40,75 @@ Trait: `com.hexagrammatic.cruciform.Ciphers`
 ###### Provides:
 + `encrypt data <data> using <key> [withAlgorithm(algorithm)] [withProvider(provider)] [writeInitVectorTo(stream)] [storeInitVectorWith(f)] to <stream>`
 + `decrypt data <data> using <key> [withAlgorithm(algorithm)] [withProvider(provider)] [withInitVector(iv)] to <stream>`
-+ `sign data <data> using <keypair> [withAlgorithm(algorithm)] [withProvider(provider)] to <stream>`
++ `sign data <data> using <key> [withAlgorithm(algorithm)] [withProvider(provider)] to <stream>`
++ `verify signature <data> using <key> [withAlgorithm(algorithm)] [withProvider(provider)] from <data>`
 
 Notes: 
++ In the `encrypt`, `decrypt`, and `sign` operations, `data <data>` and the `key <key>` may be switched if desired.  Same for `signature <data>` and `using <key>` in `verify`.
 + If a `withAlgorithm` is ommited, the language will pick the most appropriate one for the key type:
   + AES uses `AES/CBC/PKCS5Padding`
   + DES uses `DES/CBC/PKCS5Padding`
   + RSA uses `RSA/ECB/PKCS1Padding` 
-+ In the `encrypt`, `decrypt`, and `sign` operations, `data <data>` and the `key <key>` may be switched if desired.
-+ Instead of `to <stream>`, `toBytes` to `toString` may be used to return raw bytes or a string in the above operations.
 + The `<data>` value may be one of the following:
   + `InputStream`
   + `Serializable`
   + `String`
-  + `Array[Bytes]
+  + `Array[Bytes]`
   + `Array[Char]`
   + `File`
   + `Readable`
++ The `<stream>` value may be one of the following:
+  + `OutputStream`
+  + `File`
++ Instead of `to <stream>`, `toBytes` to `toString` may be used to return raw bytes or a string in the above operations.
 
+###### Example
+
+```Scala
+import com.hexagrammatic.cruciform.Ciphers
+
+object example extends Ciphers with KeyGenerators {
+  val plaintext = "Hello world"
+
+  // Symmetric encryption and decryption
+  val key = AES key
+  val iv = new ByteArrayOutputStream
+  val encrypted = encrypt data plaintext using key writeInitVectorTo iv toBytes
+  val decrypted = decrypt data encrypted using key withInitVector iv.toBytes toBytes
+
+  // Asymmetric encryption is the same
+  // as the above, except "val key = RSA keypair"
+
+  // Asymmetric sign and verify
+  val keypair = RSA keypair
+  val sig = sign data plaintext using keypair toBytes
+  val verified = verify signature sig using keypair from plaintext
+}
+```
 
 ##### Digest Operations
 
 Trait: `com.hexagrammatic.cruciform.Digests`
 
 ###### Provides:
++ `digest data <data> [withAlgorithm(algorithm)] [withProvider(provider)] to <stream>`
++ `hmac data <data> using <key> [withAlgorithm(algorithm)] [withProvider(provider)] to <stream>`
 
+Notes:
++ In the `hmac` operation, `data <data>` and the `key <key>` may be switched if desired. 
++ If a `withAlgorithm` is ommited, SHA-256 will be used for both digest and hmac.
++ The `<data>` value may be one of the following:
+  + `InputStream`
+  + `Serializable`
+  + `String`
+  + `Array[Bytes]`
+  + `Array[Char]`
+  + `File`
+  + `Readable`
++ The `<stream>` value may be one of the following:
+  + `OutputStream`
+  + `File`
++ Instead of `to <stream>`, `toBytes` to `toString` may be used to return raw bytes or a string in the above operations.
 ---
 
 #### Comparison with JCE
