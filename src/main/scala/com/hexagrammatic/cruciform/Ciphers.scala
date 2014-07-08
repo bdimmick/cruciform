@@ -33,7 +33,7 @@ import javax.crypto.CipherInputStream
 import javax.crypto.spec.IvParameterSpec
 
 
-trait Ciphers extends StreamConversions {
+trait Ciphers extends Core with StreamConversions {
 
   //Maps the default cipher type for a given key type
   private[this] val CipherForKeyType = Map(
@@ -50,30 +50,24 @@ trait Ciphers extends StreamConversions {
     map getOrElse(key.getAlgorithm,
       throw new NoSuchAlgorithmException(s"Cipher not found for key algorithm " + key.getAlgorithm))
 
-  def createCipher(algorithm: Option[String], key: Key, provider: Option[Any] = None): Cipher = {
+  def createCipher(algorithm: Option[String], key: Key, provider: OptionalProvider): Cipher = {
     val foundAlgorithm = algorithm getOrElse algorithmForKey(key, CipherForKeyType)
-    provider match {
-      case Some(value) => {
-        value match {
-          case p: Provider => Cipher getInstance(foundAlgorithm, p)
-          case s => Cipher getInstance(foundAlgorithm, s.toString)
-        }
-      }
-      case None => Cipher getInstance(foundAlgorithm)
-    }
+
+    fromProvider[Cipher](
+      provider,
+      (p: Provider) => Cipher getInstance(foundAlgorithm, p),
+      (s: String) => Cipher getInstance(foundAlgorithm, s)
+    )
   }
 
-  private def createSignature(algorithm: Option[String], key: Key, provider: Option[Any] = None): Signature = {
+  private def createSignature(algorithm: Option[String], key: Key, provider: OptionalProvider): Signature = {
     val foundAlgorithm = algorithm getOrElse algorithmForKey(key, SignatureForKeyType)
-    provider match {
-      case Some(value) => {
-        value match {
-          case p: Provider => Signature getInstance(foundAlgorithm, p)
-          case s => Signature getInstance(foundAlgorithm, s.toString)
-        }
-      }
-      case None => Signature getInstance(foundAlgorithm)
-    }
+
+    fromProvider[Signature](
+      provider,
+      (p: Provider) => Signature getInstance(foundAlgorithm, p),
+      (s: String) => Signature getInstance(foundAlgorithm, s)
+    )
   }
 
   private def makeSigningFilterStream(data: InputStream, signer: Signature): FunctionFilterStream = {
@@ -89,7 +83,7 @@ trait Ciphers extends StreamConversions {
       key: Key,
       initVectorHandler: Option[(Array[Byte]) => Any] = None,
       algorithm: Option[String] = None,
-      provider: Option[Any] = None) extends Writeable {
+      provider: OptionalProvider = DefaultProvider) extends Writeable {
 
     def storeInitVectorWith(f: (Array[Byte] => Any)): EncryptOperation =
       new EncryptOperation(data, key, Option(f), algorithm, provider)
@@ -118,8 +112,8 @@ trait Ciphers extends StreamConversions {
     def withAlgorithm(algorithm: String): EncryptOperation =
       new EncryptOperation(data, key, initVectorHandler, Option(algorithm), provider)
 
-    def withProvider(provider: Any): EncryptOperation =
-      new EncryptOperation(data, key, initVectorHandler, algorithm, Option(provider))
+    def withProvider(provider: OptionalProvider): EncryptOperation =
+      new EncryptOperation(data, key, initVectorHandler, algorithm, provider)
 
     def writeInitVectorTo(out: OutputStream): EncryptOperation =
       storeInitVectorWith((iv:Array[Byte]) => out.write(iv))
@@ -149,7 +143,7 @@ trait Ciphers extends StreamConversions {
       key: Key,
       initVector: Option[Array[Byte]] = None,
       algorithm: Option[String] = None,
-      provider: Option[Any] = None) extends Writeable {
+      provider: OptionalProvider = DefaultProvider) extends Writeable {
 
     def to[T <: OutputStream](out: T): T = {
       val cipher = createCipher(algorithm, key, provider)
@@ -170,8 +164,8 @@ trait Ciphers extends StreamConversions {
     def withInitVector(iv: Array[Byte]): DecryptOperation =
       new DecryptOperation(data, key, Option(iv), algorithm, provider)
 
-    def withProvider(provider: Any): DecryptOperation =
-      new DecryptOperation(data, key, initVector, algorithm, Option(provider))
+    def withProvider(provider: OptionalProvider): DecryptOperation =
+      new DecryptOperation(data, key, initVector, algorithm, provider)
   }
 
   class DecryptAskForKey(data: InputStream) {
@@ -195,7 +189,7 @@ trait Ciphers extends StreamConversions {
        data: InputStream,
        key: PrivateKey,
        algorithm: Option[String] = None,
-       provider: Option[Any] = None) extends Writeable {
+       provider: OptionalProvider = DefaultProvider) extends Writeable {
 
     def to[T <: OutputStream](out: T): T = {
       val signer = createSignature(algorithm, key, provider)
@@ -209,8 +203,8 @@ trait Ciphers extends StreamConversions {
     def withAlgorithm(algorithm: String): SignOperation =
       new SignOperation(data, key, Option(algorithm), provider)
 
-    def withProvider(provider: Any): SignOperation =
-      new SignOperation(data, key, algorithm, Option(provider))
+    def withProvider(provider: OptionalProvider): SignOperation =
+      new SignOperation(data, key, algorithm, provider)
   }
 
   class SignAskForKey(data: InputStream) {
@@ -234,7 +228,7 @@ trait Ciphers extends StreamConversions {
     signature: InputStream,
     key: PublicKey,
     algorithm: Option[String] = None,
-    provider: Option[Any] = None) {
+    provider: OptionalProvider = DefaultProvider) {
 
     def from(data: InputStream): Boolean = {
       val sigbytes = new ByteArrayOutputStream
@@ -254,8 +248,8 @@ trait Ciphers extends StreamConversions {
     def withAlgorithm(algorithm: String): VerifyOperation =
       new VerifyOperation(signature, key, Option(algorithm), provider)
 
-    def withProvider(provider: Any): VerifyOperation =
-      new VerifyOperation(signature, key, algorithm, Option(provider))
+    def withProvider(provider: OptionalProvider): VerifyOperation =
+      new VerifyOperation(signature, key, algorithm, provider)
 
   }
 

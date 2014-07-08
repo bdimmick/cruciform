@@ -48,32 +48,29 @@ object Digests {
 /**
  * Provides cryptographic hash extensions.
  */
-trait Digests extends StreamConversions {
+trait Digests extends Core with StreamConversions {
 
   class DigestOperation(
       stream: InputStream,
       algorithm: String = Digests.DefaultDigestAlgorithm,
-      provider: Option[Any] = None,
+      provider: OptionalProvider = DefaultProvider,
       handler: StreamHandler = NullStreamHandler) extends Writeable {
 
     def withAlgorithm(algorithm: String): DigestOperation =
       new DigestOperation(stream, algorithm, provider, handler)
 
-    def withProvider(provider: Any): DigestOperation =
-      new DigestOperation(stream, algorithm, Option(provider), handler)
+    def withProvider(provider: OptionalProvider): DigestOperation =
+      new DigestOperation(stream, algorithm, provider, handler)
 
     def withStreamHandler(handler: StreamHandler): DigestOperation =
       new DigestOperation(stream, algorithm, provider, handler)
 
     def to[T <: OutputStream](out: T): T = {
-      val md = provider match {
-        case Some(value) =>
-          value match {
-            case p:Provider => MessageDigest getInstance(algorithm, p)
-            case s => MessageDigest getInstance(algorithm, s.toString)
-          }
-        case None => MessageDigest getInstance(algorithm)
-      }
+      val md = fromProvider[MessageDigest](
+        provider,
+        (p: Provider) => MessageDigest getInstance(algorithm, p),
+        (s: String) => MessageDigest getInstance(algorithm, s)
+      )
 
       handler(new DigestInputStream(stream, md))
       out.write(md.digest)
@@ -91,27 +88,24 @@ trait Digests extends StreamConversions {
       stream: InputStream,
       key: Key,
       algorithm: String = Digests.DefaultHMACAlgorithm,
-      provider: Option[Any] = None,
+      provider: OptionalProvider = DefaultProvider,
       handler: StreamHandler = NullStreamHandler) extends Writeable {
 
     def withAlgorithm(algorithm: String): HMACOperation =
       new HMACOperation(stream, key, algorithm, provider, handler)
 
-    def withProvider(provider: Any): HMACOperation =
-      new HMACOperation(stream, key, algorithm, Option(provider), handler)
+    def withProvider(provider: OptionalProvider): HMACOperation =
+      new HMACOperation(stream, key, algorithm, provider, handler)
 
     def withStreamHandler(handler: StreamHandler): HMACOperation =
       new HMACOperation(stream, key, algorithm, provider, handler)
 
     def to[T <: OutputStream](out: T): T = {
-      val mac = provider match {
-        case Some(value) =>
-          value match {
-            case p:Provider => Mac getInstance(algorithm, p)
-            case s => Mac getInstance(algorithm, s.toString)
-          }
-        case None => Mac getInstance(algorithm)
-      }
+      val mac = fromProvider[Mac](
+        provider,
+        (p: Provider) => Mac getInstance(algorithm, p),
+        (s: String) => Mac getInstance(algorithm, s)
+      )
 
       mac init(key)
 

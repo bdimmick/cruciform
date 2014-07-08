@@ -27,27 +27,25 @@ import java.security.Provider
 import javax.crypto.KeyGenerator
 
 
-trait KeyGenerators {
+trait KeyGenerators extends Core {
   class Strength(val value: Int) { def bit: Strength = this }
   implicit def strengthFromInt(str: Int): Strength = new Strength(str)
 
   sealed class SymmetricType(
       val algorithm: String,
       val strength: Option[Strength] = None,
-      val provider: Option[Any] = None) {
+      val provider: OptionalProvider = DefaultProvider) {
 
     def strength(strength: Strength): SymmetricType = new SymmetricType(algorithm, Option(strength), provider)
-    def withProvider(provider: Any): SymmetricType = new SymmetricType(algorithm, strength, Option(provider))
+
+    def withProvider(provider: OptionalProvider): SymmetricType = new SymmetricType(algorithm, strength, provider)
+
     def key: Key = {
-      val generator = provider match {
-        case None => KeyGenerator.getInstance(algorithm)
-        case Some(value) => {
-          value match {
-            case p: Provider => KeyGenerator.getInstance(algorithm, p)
-            case str => KeyGenerator.getInstance(algorithm, str.toString)
-          }
-        }
-      }
+      val generator = fromProvider[KeyGenerator](
+        provider,
+        (p: Provider) => KeyGenerator getInstance(algorithm, p),
+        (s: String) => KeyGenerator getInstance(algorithm, s)
+      )
 
       strength match {
         case Some(str) => generator.init(str.value)
@@ -61,20 +59,18 @@ trait KeyGenerators {
   sealed class AsymmetricType(
       val algorithm: String,
       val strength: Option[Strength] = None,
-      val provider: Option[Any] = None) {
+      val provider: OptionalProvider = DefaultProvider) {
 
     def strength(strength: Strength): AsymmetricType = new AsymmetricType(algorithm, Option(strength), provider)
-    def withProvider(provider: Any): AsymmetricType = new AsymmetricType(algorithm, strength, Option(provider))
+
+    def withProvider(provider: OptionalProvider): AsymmetricType = new AsymmetricType(algorithm, strength, provider)
+
     def keypair: KeyPair = {
-      val generator = provider match {
-        case None => KeyPairGenerator.getInstance(algorithm)
-        case Some(value) => {
-          value match {
-            case p: Provider => KeyPairGenerator.getInstance(algorithm, p)
-            case str => KeyPairGenerator.getInstance(algorithm, str.toString)
-          }
-        }
-      }
+      val generator = fromProvider[KeyPairGenerator](
+        provider,
+        (p: Provider) => KeyPairGenerator getInstance(algorithm, p),
+        (s: String) => KeyPairGenerator getInstance(algorithm, s)
+      )
 
       strength match {
         case Some(str) => generator.initialize(str.value)
