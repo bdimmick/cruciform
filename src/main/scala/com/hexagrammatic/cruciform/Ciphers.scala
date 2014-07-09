@@ -30,6 +30,7 @@ import java.security.cert.Certificate
 import javax.crypto.Cipher
 import javax.crypto.Cipher._
 import javax.crypto.CipherInputStream
+import javax.crypto.SecretKey
 import javax.crypto.spec.IvParameterSpec
 
 
@@ -78,62 +79,77 @@ trait Ciphers extends Core with StreamConversions {
     )
   }
 
-  class EncryptOperation(
+  class AsymmetricEncryptOperation(
       data: InputStream,
       key: Key,
-      initVectorHandler: Option[(Array[Byte]) => Any] = None,
       algorithm: Option[String] = None,
       provider: OptionalProvider = DefaultProvider) extends Writeable {
-
-    def storeInitVectorWith(f: (Array[Byte] => Any)): EncryptOperation =
-      new EncryptOperation(data, key, Option(f), algorithm, provider)
 
     def to[T <: OutputStream](out: T): T = {
       val cipher = createCipher(algorithm, key, provider)
       cipher init(ENCRYPT_MODE, key)
-
-      // TODO(bdimmick): Can we ensure that this is always provided if the algorithm requires it?
-      Option(cipher.getIV) match {
-        case Some(iv) => {
-          initVectorHandler match {
-            case Some(handler) => handler(iv)
-            case None =>
-              throw new IllegalArgumentException(
-                "Algorithm '" + cipher.getAlgorithm + " provides init vector but not init vector handler supplied.")
-          }
-        }
-        case None =>
-      }
-
       copyHandler(out)(new CipherInputStream(data, cipher))
       out
     }
 
-    def withAlgorithm(algorithm: String): EncryptOperation =
-      new EncryptOperation(data, key, initVectorHandler, Option(algorithm), provider)
+    def withAlgorithm(algorithm: String): AsymmetricEncryptOperation =
+      new AsymmetricEncryptOperation(data, key, Option(algorithm), provider)
 
-    def withProvider(provider: OptionalProvider): EncryptOperation =
-      new EncryptOperation(data, key, initVectorHandler, algorithm, provider)
+    def withProvider(provider: OptionalProvider): AsymmetricEncryptOperation =
+      new AsymmetricEncryptOperation(data, key, algorithm, provider)
+  }
 
-    def writeInitVectorTo(out: OutputStream): EncryptOperation =
-      storeInitVectorWith((iv:Array[Byte]) => out.write(iv))
+  class SymmetricEncryptOperation(
+      data: InputStream,
+      key: Key,
+      algorithm: Option[String] = None,
+      provider: OptionalProvider = DefaultProvider) {
+
+    def to[T <: OutputStream](out: T): (T, Option[Array[Byte]]) = {
+      val cipher = createCipher(algorithm, key, provider)
+      cipher init(ENCRYPT_MODE, key)
+      copyHandler(out)(new CipherInputStream(data, cipher))
+      (out, Option(cipher.getIV))
+    }
+
+    def asBytes:(Array[Byte], Option[Array[Byte]]) = {
+      val (out, iv) = to(new ByteArrayOutputStream)
+      (out.toByteArray, iv)
+    }
+
+    def asString:(String, Option[Array[Byte]]) = {
+      val (bytes, iv) = asBytes
+      (new String(bytes), iv)
+    }
+
+    def withAlgorithm(algorithm: String): SymmetricEncryptOperation =
+      new SymmetricEncryptOperation(data, key, Option(algorithm), provider)
+
+    def withProvider(provider: OptionalProvider): SymmetricEncryptOperation =
+      new SymmetricEncryptOperation(data, key, algorithm, provider)
   }
 
   class EncryptAskForKey(data: InputStream) {
-    def using(cert: Certificate): EncryptOperation = this using (cert.getPublicKey)
-    def using(key: Key): EncryptOperation = new EncryptOperation(data, key)
-    def using(pair: KeyPair): EncryptOperation = this using (pair.getPublic)
+    def using(cert: Certificate): AsymmetricEncryptOperation = this using (cert.getPublicKey)
+    def using(key: PublicKey): AsymmetricEncryptOperation = new AsymmetricEncryptOperation(data, key)
+    def using(key: SecretKey): SymmetricEncryptOperation = new SymmetricEncryptOperation(data, key)
+    def using(pair: KeyPair): AsymmetricEncryptOperation = this using (pair.getPublic)
   }
 
-  class EncryptAskForData(key: Key) {
-    def data(data: InputStream): EncryptOperation = new EncryptOperation(data, key)
+  class AsymmetricEncryptAskForData(key: PublicKey) {
+    def data(data: InputStream): AsymmetricEncryptOperation = new AsymmetricEncryptOperation(data, key)
+  }
+
+  class SymmetricEncryptAskForData(key: SecretKey) {
+    def data(data: InputStream): SymmetricEncryptOperation = new SymmetricEncryptOperation(data, key)
   }
 
   class EncryptAskForDataOrKey {
     def data(data: InputStream): EncryptAskForKey = new EncryptAskForKey(data)
-    def using(cert: Certificate):  EncryptAskForData = this using (cert.getPublicKey)
-    def using(key: Key):  EncryptAskForData = new  EncryptAskForData(key)
-    def using(pair: KeyPair):  EncryptAskForData = this using (pair.getPublic)
+    def using(cert: Certificate):  AsymmetricEncryptAskForData = this using (cert.getPublicKey)
+    def using(key: SecretKey):  SymmetricEncryptAskForData = new  SymmetricEncryptAskForData(key)
+    def using(key: PublicKey):  AsymmetricEncryptAskForData = new  AsymmetricEncryptAskForData(key)
+    def using(pair: KeyPair):  AsymmetricEncryptAskForData = this using (pair.getPublic)
   }
 
   def encrypt: EncryptAskForDataOrKey = new EncryptAskForDataOrKey
