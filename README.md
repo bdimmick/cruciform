@@ -45,10 +45,11 @@ Trait: `com.hexagrammatic.cruciform.Ciphers`
 
 Notes: 
 + In the `encrypt`, `decrypt`, and `sign` operations, `data <data>` and the `key <key>` may be switched if desired.  Same for `signature <data>` and `using <key>` in `verify`.
-+ If a `withAlgorithm` is ommited, the language will pick the most appropriate one for the key type:
++ If `withAlgorithm` is omitted, the language will pick the most appropriate one for the key type:
   + AES uses `AES/CBC/PKCS5Padding`
   + DES uses `DES/CBC/PKCS5Padding`
-  + RSA uses `RSA/ECB/PKCS1Padding` 
+  + RSA uses `RSA/ECB/PKCS1Padding`
+  + Other key types must provide the algorithm
 + The `<data>` value may be one of the following:
   + `InputStream`
   + `Serializable`
@@ -96,7 +97,7 @@ Trait: `com.hexagrammatic.cruciform.Digests`
 
 Notes:
 + In the `hmac` operation, `data <data>` and the `key <key>` may be switched if desired. 
-+ If a `withAlgorithm` is ommited, SHA-256 will be used for both digest and hmac.
++ If `withAlgorithm` is omitted, SHA-256 will be used for both digest and hmac.
 + The `<data>` value may be one of the following:
   + `InputStream`
   + `Serializable`
