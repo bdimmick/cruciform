@@ -36,8 +36,9 @@ class StreamUtilsSpec extends FlatSpec with Matchers with StreamConversions {
 
   def randomInt = scala.util.Random.nextInt
 
+  val data = "Hello World"
+
   "Stream utils" should "be able to provide a no-op handler that reads an entire stream" in {
-    val data = "Hello World"
     val stream = new CountingInputStream(new ByteArrayInputStream(data.getBytes))
 
     NullStreamHandler(stream)
@@ -46,7 +47,6 @@ class StreamUtilsSpec extends FlatSpec with Matchers with StreamConversions {
   }
 
   "Stream utils" should "be able to provide a handler that copies an entire stream" in {
-    val data = "Hello World"
     val in = new ByteArrayInputStream(data.getBytes)
     val out = new ByteArrayOutputStream
     
@@ -56,7 +56,6 @@ class StreamUtilsSpec extends FlatSpec with Matchers with StreamConversions {
   }
 
   "Stream utils" should "be able to convert a string to a stream" in {
-    val data = "Hello World"
     val in = toInputStream(data)
     val out = new ByteArrayOutputStream
     
@@ -66,7 +65,6 @@ class StreamUtilsSpec extends FlatSpec with Matchers with StreamConversions {
   }
 
   "Stream utils" should "be able to convert a byte array to a stream" in {
-    val data = "Hello World"
     val in = toInputStream(data.getBytes)
     val out = new ByteArrayOutputStream
     
@@ -90,7 +88,6 @@ class StreamUtilsSpec extends FlatSpec with Matchers with StreamConversions {
   }
  
   "Stream utils" should "be able to convert a streamable to a stream" in {
-    val data = "Hello World"
     val in = toInputStream(new TestingReadable(data))
     val out = new ByteArrayOutputStream
     
@@ -115,7 +112,6 @@ class StreamUtilsSpec extends FlatSpec with Matchers with StreamConversions {
   }
 
   "Stream utils" should "be able to provide a default buffer handler for a functional stream" in {
-    val data = "Hello World".getBytes
     val count = new AtomicInteger(0)
     val f = (b: Byte) => count.incrementAndGet
     val out = new ByteArrayOutputStream
@@ -126,7 +122,6 @@ class StreamUtilsSpec extends FlatSpec with Matchers with StreamConversions {
   }
 
   "Stream utils" should "be able to utilize a buffer handler for a functional stream" in {
-    val data = "Hello World".getBytes
     val byteUseCount = new AtomicInteger(0)
     val bufferUseCount = new AtomicInteger(0)
     val byteFunc = (b: Byte) => byteUseCount.incrementAndGet
