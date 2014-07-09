@@ -61,7 +61,7 @@ Notes:
 + The `<stream>` value may be one of the following:
   + `OutputStream`
   + `File`
-+ Instead of `to <stream>`, `toBytes` to `toString` may be used to return raw bytes or a string in the above operations.
++ Instead of `to <stream>`, `toBytes` or `toString` may be used to return raw bytes or a string in the above operations.
 
 ###### Example
 
@@ -109,8 +109,22 @@ Notes:
 + The `<stream>` value may be one of the following:
   + `OutputStream`
   + `File`
-+ Instead of `to <stream>`, `toBytes` to `toString` may be used to return raw bytes or a string in the above operations.
++ Instead of `to <stream>`, `toBytes` or `toString` may be used to return raw bytes or a string in the above operations.
 
+```Scala
+
+import com.hexagrammatic.cruciform.Digests
+
+object Example extends Digests with KeyGenerators {
+  val str = "Hello World"
+
+  val digestSHA = digest data str
+
+  val key = AES key
+  val hmacSHA = hmac data str using key
+}
+
+```
 
 ---
 
