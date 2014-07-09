@@ -2,6 +2,12 @@
 
 ---
 
+#### Setup
+
+1. Install [JCE Unlimited Strength Policy](http://www.oracle.com/technetwork/java/javase/downloads/jce-7-download-432124.html)
+2. `git clone https://github.com/bdimmick/cruciform.git`
+3. `cd cruciform; sbt test package`
+
 #### Usage
 
 Cruciform provides functionality through traits that are mixed into the classes and objects that need to perform cryptographic operations.
@@ -39,7 +45,7 @@ Trait: `com.hexagrammatic.cruciform.Ciphers`
 
 ###### Provides:
 + `encrypt data <data> using <key> [withAlgorithm(algorithm)] [withProvider(provider)]
-  [writeInitVectorTo(stream)] [storeInitVectorWith(f)] to <stream>`
+  to <stream>`
 + `decrypt data <data> using <key> [withAlgorithm(algorithm)] [withProvider(provider)]
   [withInitVector(iv)] to <stream>`
 + `sign data <data> using <key> [withAlgorithm(algorithm)] [withProvider(provider)] to <stream>`
@@ -63,13 +69,13 @@ Notes:
   + `OutputStream`
   + `File`
 + Encrypt behaves slightly differently based on the key type provided.
-  + When a `SecretKey` (symmetric key) is provided to `encrypt`, the return type is `(OutputStream, 
+  + When a `SecretKey` (symmetric key) is provided to `encrypt`, the return type is a`(OutputStream, 
     Option[Array[Byte]])` tuple consisting of the stream to which the ciphertext is written and an
-    optional init vector, if one was created for the operation.  The same goes for `asBytes` and
+    optional init vector, if one was created for the operation.  Similarly, `asBytes` and 
     `asString`, which returns a `(Array[Byte], Option[Array[Byte]])` or a `(String, 
-    Option[Array[Byte]])`, respectively 
+    Option[Array[Byte]])` respectively.
   + When a `PublicKey`, `KeyPair`, or `Certificate` is provided to `encrypt`, the return type is
-    just `OutputStream`, with `asBytes` returning an `Array[Byte]` and `asString` returning a 
+    a `OutputStream`, with `asBytes` returning an `Array[Byte]` and `asString` returning a 
     `String`.
 + If `withAlgorithm` is omitted, the language will pick the most appropriate one for the key type:
   + AES uses `AES/CBC/PKCS5Padding`
