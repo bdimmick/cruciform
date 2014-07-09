@@ -20,9 +20,14 @@
 package com.hexagrammatic.cruciform
 
 import java.io._
+import java.net.InetAddress
+import java.net.Socket
+import java.net.URL
 
 import org.apache.commons.io.IOUtils.copy
+
 import scala.Serializable
+
 
 
 /**
@@ -39,8 +44,8 @@ trait Writeable {
 }
 
 /**
- * Provides functionality to convert the provided object to a stream for use in cryptographic operations.
- * The input conversion rules are as follows, in the following order:
+ * Provides functionality to convert the provided object to a stream for use in
+ * cryptographic operations. The input conversion rules are as follows, in the following order:
  *   * `Streamable` objects have the result of their `toStream` method returned
  *   * `InputStream`s are returned as-is
  *   * `File`s are opened as a FileInputStream.
@@ -50,12 +55,21 @@ trait Writeable {
  *   * `Serializable`s return a stream of bytes as written to an ObjectOutputStream
  */
 trait StreamConversions {
+  def url(s:String): URL = new URL(s)
   implicit def toOutputStream(f: File): OutputStream = new FileOutputStream(f)
+  implicit def toOutputStream(addr: (InetAddress, Int)): OutputStream =
+    toOutputStream(new Socket(addr._1, addr._2))
+  implicit def toOutputStream(s: Socket): OutputStream = s.getOutputStream
   implicit def toInputStream(s: String): InputStream = new ByteArrayInputStream(s.getBytes)
   implicit def toInputStream(x: Readable): InputStream = x.stream
   implicit def toInputStream(a: Array[Byte]): InputStream = new ByteArrayInputStream(a)
-  implicit def toInputStream(a: Array[Char]): InputStream = new ByteArrayInputStream(new String(a).getBytes)
+  implicit def toInputStream(a: Array[Char]): InputStream =
+    new ByteArrayInputStream(new String(a).getBytes)
   implicit def toInputStream(f: File): InputStream = new FileInputStream(f)
+  implicit def toInputStream(addr: (InetAddress, Int)): InputStream =
+    toInputStream(new Socket(addr._1, addr._2))
+  implicit def toInputStream(s: Socket): InputStream = s.getInputStream
+  implicit def toInputStream(u: URL): InputStream = u.openConnection.getInputStream
   implicit def toInputStream(s: Serializable): InputStream = {
     val bstream = new ByteArrayOutputStream
     val ostream = new ObjectOutputStream(bstream)

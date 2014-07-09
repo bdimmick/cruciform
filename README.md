@@ -10,7 +10,8 @@
 
 #### Usage
 
-Cruciform provides functionality through traits that are mixed into the classes and objects that need to perform cryptographic operations.
+Cruciform provides functionality through traits that are mixed into the 
+classes and objects that need to perform cryptographic operations.
 
 ##### Key Generation
 
