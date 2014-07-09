@@ -34,8 +34,8 @@ trait Readable {
 
 trait Writeable {
   def to[T <: OutputStream](out: T): T
-  def toBytes: Array[Byte] = to(new ByteArrayOutputStream).toByteArray
-  override def toString: String = new String(toBytes)
+  def asBytes: Array[Byte] = to(new ByteArrayOutputStream).toByteArray
+  def asString: String = new String(asBytes)
 }
 
 /**

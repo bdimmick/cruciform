@@ -19,12 +19,13 @@
 
 package com.hexagrammatic.cruciform
 
-import java.security.Key
+
 import java.security.KeyPair
 import java.security.KeyPairGenerator
 import java.security.Provider
 
 import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
 
 
 trait KeyGenerators extends Core {
@@ -40,7 +41,7 @@ trait KeyGenerators extends Core {
 
     def withProvider(provider: OptionalProvider): SymmetricType = new SymmetricType(algorithm, strength, provider)
 
-    def key: Key = {
+    def key: SecretKey = {
       val generator = fromProvider[KeyGenerator](
         provider,
         (p: Provider) => KeyGenerator getInstance(algorithm, p),

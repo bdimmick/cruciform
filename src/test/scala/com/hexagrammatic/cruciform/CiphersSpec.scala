@@ -42,11 +42,11 @@ class CiphersSpec extends FlatSpec with Matchers with MockFactory with Ciphers w
     val ivStream1 = new ByteArrayOutputStream()
     val ivStream2 = new ByteArrayOutputStream()
 
-    val ciphertext1 = encrypt data str using key writeInitVectorTo ivStream1 toBytes
-    val ciphertext2 = encrypt using key data str writeInitVectorTo ivStream2 toBytes
+    val ciphertext1 = encrypt data str using key writeInitVectorTo ivStream1 asBytes
+    val ciphertext2 = encrypt using key data str writeInitVectorTo ivStream2 asBytes
 
-    val plaintext1 = decrypt data ciphertext1 using key withInitVector ivStream1.toByteArray toBytes
-    val plaintext2 = decrypt using key data ciphertext2 withInitVector ivStream2.toByteArray toBytes
+    val plaintext1 = decrypt data ciphertext1 using key withInitVector ivStream1.toByteArray asBytes
+    val plaintext2 = decrypt using key data ciphertext2 withInitVector ivStream2.toByteArray asBytes
 
     (plaintext1) should equal (plaintext2)
 
@@ -60,8 +60,8 @@ class CiphersSpec extends FlatSpec with Matchers with MockFactory with Ciphers w
     val key = AES key
     val ivStream = new ByteArrayOutputStream()
     
-    val ciphertext = encrypt data str using key writeInitVectorTo ivStream toBytes
-    val plaintext = decrypt data ciphertext using key withInitVector ivStream.toByteArray toBytes
+    val ciphertext = encrypt data str using key writeInitVectorTo ivStream asBytes
+    val plaintext = decrypt data ciphertext using key withInitVector ivStream.toByteArray asBytes
 
     validateResults(ciphertext, plaintext)
   }
@@ -70,8 +70,8 @@ class CiphersSpec extends FlatSpec with Matchers with MockFactory with Ciphers w
     val alg = "AES/ECB/PKCS5Padding"
     val key = AES key
 
-    val ciphertext = encrypt data str using key withAlgorithm alg toBytes
-    val plaintext = decrypt data ciphertext using key withAlgorithm alg toBytes
+    val ciphertext = encrypt data str using key withAlgorithm alg asBytes
+    val plaintext = decrypt data ciphertext using key withAlgorithm alg asBytes
 
     validateResults(ciphertext, plaintext)
   }
@@ -80,8 +80,8 @@ class CiphersSpec extends FlatSpec with Matchers with MockFactory with Ciphers w
     val key = DES key
     val ivStream = new ByteArrayOutputStream()
     
-    val ciphertext = encrypt data str using key writeInitVectorTo ivStream toBytes
-    val plaintext = decrypt data ciphertext using key withInitVector ivStream.toByteArray toBytes
+    val ciphertext = encrypt data str using key writeInitVectorTo ivStream asBytes
+    val plaintext = decrypt data ciphertext using key withInitVector ivStream.toByteArray asBytes
 
     validateResults(ciphertext, plaintext)
   }
@@ -95,8 +95,8 @@ class CiphersSpec extends FlatSpec with Matchers with MockFactory with Ciphers w
   "Ciphers" should "be able to perform RSA encryption" in {
     val keypair = RSA keypair
 
-    val ciphertext = encrypt data str using keypair toBytes
-    val plaintext = decrypt data ciphertext using keypair toBytes
+    val ciphertext = encrypt data str using keypair asBytes
+    val plaintext = decrypt data ciphertext using keypair asBytes
 
     validateResults(ciphertext, plaintext)
   }
@@ -120,7 +120,7 @@ class CiphersSpec extends FlatSpec with Matchers with MockFactory with Ciphers w
   "Ciphers" should "be able to sign and verify data with defaults" in {
     val keypair = RSA keypair
 
-    val sig = sign data str using keypair toBytes
+    val sig = sign data str using keypair asBytes
 
     // Valid verification with paired key
     (verify signature sig using keypair from str) should equal (true)
@@ -133,7 +133,7 @@ class CiphersSpec extends FlatSpec with Matchers with MockFactory with Ciphers w
     val keypair = RSA keypair
     val algorithm = "SHA1withRSA"
 
-    val sig = sign data str using keypair withAlgorithm algorithm toBytes
+    val sig = sign data str using keypair withAlgorithm algorithm asBytes
 
     // Valid verification with paired key
     (verify signature sig using keypair withAlgorithm algorithm from str) should equal (true)
@@ -148,8 +148,8 @@ class CiphersSpec extends FlatSpec with Matchers with MockFactory with Ciphers w
   "Ciphers" should "be able to use key and data in any order for sign and verify" in {
     val keypair = RSA keypair
 
-    val sig1 = sign data str using keypair toBytes
-    val sig2 = sign using keypair data str toBytes
+    val sig1 = sign data str using keypair asBytes
+    val sig2 = sign using keypair data str asBytes
 
     (verify signature sig1 using keypair from str) should equal (true)
     (verify signature sig2 using keypair from str) should equal (true)
