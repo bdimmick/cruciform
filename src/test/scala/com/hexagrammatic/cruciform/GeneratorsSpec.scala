@@ -69,4 +69,10 @@ class GeneratorsSpec extends FlatSpec with Matchers with KeyGenerators {
     pair.getPrivate should not be null
     pair.getPublic should not be null
   }
+
+  "Generators" should "be able to be extended easily" in {
+    val Rijndael = new SymmetricType("Rijndael")
+
+    Rijndael key
+  }
 }
