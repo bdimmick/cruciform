@@ -8,12 +8,16 @@ import java.security.PrivateKey
 
 import javax.security.cert.Certificate
 
-import org.bouncycastle.openssl.{PEMParser, PEMWriter}
+import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
+import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
+import org.bouncycastle.openssl.{PEMKeyPair, PEMParser, PEMWriter}
+import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
+import scala.None
 
 
 trait Encoders extends StreamConversions {
 
-  private class PEMEncoder(objs: AnyRef*) extends Writeable {
+  class PEMEncoder(objs: AnyRef*) extends Writeable {
     def to[T <: OutputStream](out: T): T = {
       val writer = new PEMWriter(new OutputStreamWriter(out))
       objs.foreach((r:AnyRef) => writer.writeObject(r))
@@ -26,15 +30,29 @@ trait Encoders extends StreamConversions {
   class PEMKeyPairEncoder(pair: KeyPair) extends PEMEncoder(pair.getPublic, pair.getPrivate)
   class PEMKeyEncoder(key: Key) extends PEMEncoder(key)
 
+  class PEMDecoder(in: InputStream) {
+
+    val keypair = {
+      val converter = new JcaPEMKeyConverter()
+      val parser = new PEMParser(new InputStreamReader(in))
+      val opt = Option(parser.readObject)
+
+      opt getOrElse (new KeyPair(null, null)) match {
+        case priv: PrivateKeyInfo => new KeyPair(null, converter.getPrivateKey(priv))
+        case pub: SubjectPublicKeyInfo => new KeyPair(converter.getPublicKey(pub), null)
+        case pair: PEMKeyPair => converter.getKeyPair(pair)
+      }
+    }
+
+    def asPrivateKey: Option[PrivateKey] = Option(keypair.getPrivate)
+    def asPublicKey: Option[PublicKey] = Option(keypair.getPublic)
+  }
+
   object PEM {
     def encode(cert: Certificate): PEMCertificateEncoder = new PEMCertificateEncoder(cert)
     def encode(pair: KeyPair): PEMKeyPairEncoder = new PEMKeyPairEncoder(pair)
     def encode(key: PublicKey): PEMKeyEncoder = new PEMKeyEncoder(key)
     def encode(key: PrivateKey): PEMKeyEncoder = new PEMKeyEncoder(key)
-
-    def decode(in: InputStream): Unit = {
-      val parser = new PEMParser(new InputStreamReader(in))
-      parser.readObject
-    }
+    def decode(in: InputStream): PEMDecoder = new PEMDecoder(in)
   }
 }
