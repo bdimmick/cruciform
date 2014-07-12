@@ -11,25 +11,56 @@ import javax.security.cert.Certificate
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.openssl.{PEMKeyPair, PEMParser, PEMWriter}
-import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
+import org.bouncycastle.openssl.jcajce.{JcePEMEncryptorBuilder, JcaPEMKeyConverter}
 
 
 trait Encoders extends StreamConversions {
 
   class PEMEncoder(objs: AnyRef*) extends Writeable {
+    def write(writer: PEMWriter, obj: AnyRef) {
+      writer.writeObject(obj)
+    }
+
     def to[T <: OutputStream](out: T): T = {
       val writer = new PEMWriter(new OutputStreamWriter(out))
-      objs.foreach((r:AnyRef) => writer.writeObject(r))
+      objs.foreach((r:AnyRef) => write(writer, r))
       writer.flush
       out
     }
   }
 
   class PEMCertificateEncoder(cert: Certificate) extends PEMEncoder(cert)
-  class PEMKeyPairEncoder(pair: KeyPair) extends PEMEncoder(pair.getPublic, pair.getPrivate)
-  class PEMKeyEncoder(key: Key) extends PEMEncoder(key)
 
-  class PEMDecoder(in: InputStream) {
+  class PEMPublicKeyEncoder(key: PublicKey) extends PEMEncoder(key)
+
+  class PEMPrivateKeyEncoder(
+      key: PrivateKey,
+      password: Option[String] = None,
+      encryptionAlgortihm: Option[String] = None) extends PEMEncoder(key) {
+
+    val encryptorBuilder = encryptionAlgortihm match {
+      case Some(algorithm) => new JcePEMEncryptorBuilder(algorithm)
+      case None => new JcePEMEncryptorBuilder("AES")
+    }
+
+    def withPassword(password: String): PEMPrivateKeyEncoder =
+      new PEMPrivateKeyEncoder(key, Option(password), encryptionAlgortihm)
+
+    def withEncryptionAlgorithm(algorithm: String): PEMPrivateKeyEncoder =
+      new PEMPrivateKeyEncoder(key, password, Option(algorithm))
+
+    override def write(writer: PEMWriter, obj: AnyRef) {
+      password match {
+        case Some(password) => writer.writeObject(obj, encryptorBuilder.build(password.toCharArray))
+        case None => writer.writeObject(obj)
+      }
+    }
+  }
+
+  class PEMDecoder(
+      in: InputStream,
+      password: Option[String] = None,
+      encryptionAlgortihm: Option[String] = None) {
 
     val keypair =
       Option(new PEMParser(new InputStreamReader(in)).readObject) map {
@@ -44,9 +75,8 @@ trait Encoders extends StreamConversions {
 
   object PEM {
     def encode(cert: Certificate): PEMCertificateEncoder = new PEMCertificateEncoder(cert)
-    def encode(pair: KeyPair): PEMKeyPairEncoder = new PEMKeyPairEncoder(pair)
-    def encode(key: PublicKey): PEMKeyEncoder = new PEMKeyEncoder(key)
-    def encode(key: PrivateKey): PEMKeyEncoder = new PEMKeyEncoder(key)
+    def encode(key: PublicKey): PEMPublicKeyEncoder = new PEMPublicKeyEncoder(key)
+    def encode(key: PrivateKey): PEMPrivateKeyEncoder = new PEMPrivateKeyEncoder(key)
     def decode(in: InputStream): PEMDecoder = new PEMDecoder(in)
   }
 }

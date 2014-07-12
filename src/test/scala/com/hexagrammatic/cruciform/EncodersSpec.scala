@@ -26,6 +26,21 @@ class EncodersSpec extends FlatSpec with Matchers with KeyGenerators with Encode
     (plaintext) should be (str)
   }
 
+  "Encoders" should "be able to encode a private key as a a PEM with a password" in {
+    val keypair = RSA keypair
+    val password = "password"
+    val str = "Hello World"
+    val ciphertext = encrypt data str using keypair.getPublic asBytes
+
+    val encoded = PEM encode keypair.getPrivate withPassword password asBytes
+    val pk = (PEM decode encoded asPrivateKey) getOrElse fail
+    val plaintext = decrypt data ciphertext using pk asString
+
+    compareKeys(keypair.getPrivate, pk)
+    (plaintext) should be (str)
+  }
+
+
   "Encoders" should " not be able to find a private key if no data is present" in {
     (PEM decode "" asPrivateKey) should be (None)
   }
