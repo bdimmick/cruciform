@@ -10,11 +10,11 @@ import javax.security.cert.Certificate
 
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
-import org.bouncycastle.openssl.{PEMKeyPair, PEMParser, PEMWriter}
-import org.bouncycastle.openssl.jcajce.{JcePEMEncryptorBuilder, JcaPEMKeyConverter}
+import org.bouncycastle.openssl.{PEMEncryptedKeyPair, PEMKeyPair, PEMParser, PEMWriter}
+import org.bouncycastle.openssl.jcajce.{JcePEMDecryptorProviderBuilder, JcePEMEncryptorBuilder, JcaPEMKeyConverter}
 
 
-trait Encoders extends StreamConversions {
+trait Codecs extends StreamConversions {
 
   class PEMEncoder(objs: AnyRef*) extends Writeable {
     def write(writer: PEMWriter, obj: AnyRef) {
@@ -40,7 +40,7 @@ trait Encoders extends StreamConversions {
 
     val encryptorBuilder = encryptionAlgortihm match {
       case Some(algorithm) => new JcePEMEncryptorBuilder(algorithm)
-      case None => new JcePEMEncryptorBuilder("AES")
+      case None => new JcePEMEncryptorBuilder("AES-256-CBC")
     }
 
     def withPassword(password: String): PEMPrivateKeyEncoder =
@@ -59,15 +59,27 @@ trait Encoders extends StreamConversions {
 
   class PEMDecoder(
       in: InputStream,
-      password: Option[String] = None,
-      encryptionAlgortihm: Option[String] = None) {
+      password: Option[String] = None) {
 
-    val keypair =
+    private[this] val EmptyKeyPair = new KeyPair(null, null)
+
+    def keypair =
       Option(new PEMParser(new InputStreamReader(in)).readObject) map {
         case priv: PrivateKeyInfo => new KeyPair(null, new JcaPEMKeyConverter().getPrivateKey(priv))
         case pub: SubjectPublicKeyInfo => new KeyPair(new JcaPEMKeyConverter().getPublicKey(pub), null)
         case pair: PEMKeyPair => new JcaPEMKeyConverter().getKeyPair(pair)
-      } getOrElse (new KeyPair(null, null))
+        case encrypted: PEMEncryptedKeyPair => {
+          password match {
+            case Some(password) => {
+              val decryptor = new JcePEMDecryptorProviderBuilder().build(password.toCharArray)
+              new JcaPEMKeyConverter().getKeyPair(encrypted.decryptKeyPair(decryptor))
+            }
+            case None => EmptyKeyPair
+          }
+        }
+      } getOrElse (EmptyKeyPair)
+
+    def withPassword(password: String): PEMDecoder = new PEMDecoder(in, Option(password))
 
     def asPrivateKey: Option[PrivateKey] = Option(keypair.getPrivate)
     def asPublicKey: Option[PublicKey] = Option(keypair.getPublic)

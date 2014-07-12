@@ -5,7 +5,7 @@ import java.security.PrivateKey
 
 import org.scalatest.{Matchers, FlatSpec}
 
-class EncodersSpec extends FlatSpec with Matchers with KeyGenerators with Encoders with Ciphers {
+class CodecsSpec extends FlatSpec with Matchers with KeyGenerators with Codecs with Ciphers {
 
   def compareKeys(original: Key, possible: Key) {
     (possible.getAlgorithm) should be (original.getAlgorithm)
@@ -33,7 +33,10 @@ class EncodersSpec extends FlatSpec with Matchers with KeyGenerators with Encode
     val ciphertext = encrypt data str using keypair.getPublic asBytes
 
     val encoded = PEM encode keypair.getPrivate withPassword password asBytes
-    val pk = (PEM decode encoded asPrivateKey) getOrElse fail
+
+    (PEM decode encoded asPrivateKey) should be (None)
+
+    val pk = (PEM decode encoded withPassword password asPrivateKey) getOrElse fail
     val plaintext = decrypt data ciphertext using pk asString
 
     compareKeys(keypair.getPrivate, pk)
