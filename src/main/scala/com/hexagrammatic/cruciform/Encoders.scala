@@ -12,7 +12,6 @@ import org.bouncycastle.asn1.pkcs.PrivateKeyInfo
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo
 import org.bouncycastle.openssl.{PEMKeyPair, PEMParser, PEMWriter}
 import org.bouncycastle.openssl.jcajce.JcaPEMKeyConverter
-import scala.None
 
 
 trait Encoders extends StreamConversions {
@@ -32,17 +31,12 @@ trait Encoders extends StreamConversions {
 
   class PEMDecoder(in: InputStream) {
 
-    val keypair = {
-      val converter = new JcaPEMKeyConverter()
-      val parser = new PEMParser(new InputStreamReader(in))
-      val opt = Option(parser.readObject)
-
-      opt getOrElse (new KeyPair(null, null)) match {
-        case priv: PrivateKeyInfo => new KeyPair(null, converter.getPrivateKey(priv))
-        case pub: SubjectPublicKeyInfo => new KeyPair(converter.getPublicKey(pub), null)
-        case pair: PEMKeyPair => converter.getKeyPair(pair)
-      }
-    }
+    val keypair =
+      Option(new PEMParser(new InputStreamReader(in)).readObject) map {
+        case priv: PrivateKeyInfo => new KeyPair(null, new JcaPEMKeyConverter().getPrivateKey(priv))
+        case pub: SubjectPublicKeyInfo => new KeyPair(new JcaPEMKeyConverter().getPublicKey(pub), null)
+        case pair: PEMKeyPair => new JcaPEMKeyConverter().getKeyPair(pair)
+      } getOrElse (new KeyPair(null, null))
 
     def asPrivateKey: Option[PrivateKey] = Option(keypair.getPrivate)
     def asPublicKey: Option[PublicKey] = Option(keypair.getPublic)

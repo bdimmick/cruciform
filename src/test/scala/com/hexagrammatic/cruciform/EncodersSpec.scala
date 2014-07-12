@@ -26,4 +26,31 @@ class EncodersSpec extends FlatSpec with Matchers with KeyGenerators with Encode
     (plaintext) should be (str)
   }
 
+  "Encoders" should " not be able to find a private key if no data is present" in {
+    (PEM decode "" asPrivateKey) should be (None)
+  }
+
+  "Encoders" should " not be able to find a private key if no key is present" in {
+    val keypair = RSA keypair
+    val encoded = PEM encode keypair.getPublic asBytes
+
+    (PEM decode encoded asPrivateKey) should be (None)
+  }
+
+  "Encoders" should "be able to encode a public key as a a PEM" in {
+    val keypair = RSA keypair
+    val str = "Hello World"
+    val sig = sign data str using keypair.getPrivate asBytes
+
+    val encoded = PEM encode keypair.getPublic asBytes
+    val pk = (PEM decode encoded asPublicKey) getOrElse fail
+
+    compareKeys(keypair.getPublic, pk)
+    (verify signature sig using pk from str) should be (true)
+  }
+
+  "Encoders" should " not be able to find a public key if no data is present" in {
+    (PEM decode "" asPublicKey) should be (None)
+  }
+
 }
