@@ -161,6 +161,9 @@ trait Ciphers extends Core with StreamConversions {
       algorithm: Option[String] = None,
       provider: OptionalProvider = DefaultProvider) extends Writeable {
 
+    /**
+     * Performs the decryption and writes the ciphertext out to the provided stream.
+     */
     def to[T <: OutputStream](out: T): T = {
       val cipher = createCipher(algorithm, key, provider)
       val spec = initVector match {
@@ -174,31 +177,65 @@ trait Ciphers extends Core with StreamConversions {
       out
     }
 
+    /**
+     * Sets the algorithm to use in this decryption.
+     */
     def withAlgorithm(algorithm: String): DecryptOperation =
       new DecryptOperation(data, key, initVector, Option(algorithm), provider)
 
+    /**
+     * Sets the init vector to use in this decryption.
+     */
     def withInitVector(iv: Array[Byte]): DecryptOperation =
       new DecryptOperation(data, key, Option(iv), algorithm, provider)
 
+    /**
+     * Sets the JCE provider to use in this decryption.
+     */
     def withProvider(provider: OptionalProvider): DecryptOperation =
       new DecryptOperation(data, key, initVector, algorithm, provider)
   }
 
   class DecryptAskForKey(data: InputStream) {
+    /**
+     * Sets the key to use in this decryption.  Follow this statement with decrypt options.
+     */
     def using(key: Key): DecryptOperation = new DecryptOperation(data, key)
+
+    /**
+     * Sets the key from a keypair to use in this decryption.  Follow this statement with decrypt options.
+     */
     def using(pair: KeyPair): DecryptOperation = this using pair.getPrivate
   }
 
+  /**
+   * Sets the data to sign.  Follow this statement with decrypt options.
+   */
   class DecryptAskForData(key: Key) {
     def data(data: InputStream): DecryptOperation = new DecryptOperation(data, key)
   }
 
   class DecryptAskForDataOrKey {
+    /**
+     * Sets the data to sign.  Follow this statement with `using <key>`.
+     */
     def data(data: InputStream): DecryptAskForKey = new DecryptAskForKey(data)
+
+    /**
+     * Sets the key to use in this decryption.  Follow this statement with `data <stream>`.
+     */
     def using(key: Key): DecryptAskForData = new DecryptAskForData(key)
+
+    /**
+     * Sets the key from a keypair to use in this decryption.  Follow this statement with `data <stream>`.
+     */
     def using(pair: KeyPair): DecryptAskForData = this using pair.getPrivate
   }
 
+
+  /**
+   * Starts a decryption operation.  Follow this statement with `data <steam>` or `using <key>`.
+   */
   def decrypt: DecryptAskForDataOrKey = new DecryptAskForDataOrKey
 
   class SignOperation(
@@ -207,6 +244,9 @@ trait Ciphers extends Core with StreamConversions {
        algorithm: Option[String] = None,
        provider: OptionalProvider = DefaultProvider) extends Writeable {
 
+    /**
+     * Completes the signing operation and writes out the signature bytes to the provided stream.
+     */
     def to[T <: OutputStream](out: T): T = {
       val signer = createSignature(algorithm, key, provider)
       signer initSign(key)
@@ -216,28 +256,67 @@ trait Ciphers extends Core with StreamConversions {
       out
     }
 
+    /**
+     * Sets the algorithm to use with this signing operation.
+     */
     def withAlgorithm(algorithm: String): SignOperation =
       new SignOperation(data, key, Option(algorithm), provider)
 
+    /**
+     * Sets the JCE provider to use with this JCE operation.
+     */
     def withProvider(provider: OptionalProvider): SignOperation =
       new SignOperation(data, key, algorithm, provider)
   }
 
   class SignAskForKey(data: InputStream) {
+    /**
+     * Sets the private key to use when generating the signature.  Follow this statement with signing options.
+     */
     def using(key: PrivateKey): SignOperation = new SignOperation(data, key)
+
+    /**
+     * Sets the private key froim a keypair to use when generating the signature.
+     * Follow this statement with signing options.
+     */
     def using(pair: KeyPair): SignOperation = this using pair.getPrivate
   }
 
   class SignAskForData(key: PrivateKey) {
+    /**
+     * Sets the data to sign.  Follow this statement with signing options.
+     *
+     *@param data the data, as an `InputStream` - implicits provide convenience conversions.
+     **/
     def data(data: InputStream): SignOperation = new SignOperation(data, key)
   }
 
   class SignAskForDataOrKey {
+    /**
+     * Sets the data to sign.  Follow this statement with `using <key>`.
+     *
+     * @param data the data, as an `InputStream` - implicits provide convenience conversions.
+     **/
     def data(data: InputStream): SignAskForKey = new SignAskForKey(data)
+
+    /**
+     * Sets the private key to use when generating the signature.  Follow this statement with `data <stream>`.
+     */
     def using(key: PrivateKey): SignAskForData = new SignAskForData(key)
+
+    /**
+     * Sets the private key froim a keypair to use when generating the signature.
+     * Follow this statement with `data <stream>`.
+     */
     def using(pair: KeyPair): SignAskForData = this using pair.getPrivate
   }
 
+  /**
+   * Starts a signing operation, writing out the signature to another stream.
+   *
+   * Follow this statement with either `using <key>` or `data <stream>`.
+   *
+   */
   def sign: SignAskForDataOrKey = new SignAskForDataOrKey
 
   class VerifyOperation(
@@ -246,6 +325,11 @@ trait Ciphers extends Core with StreamConversions {
     algorithm: Option[String] = None,
     provider: OptionalProvider = DefaultProvider) {
 
+    /**
+     * Sets the `InputStream` that contains the data to use in signature verification and then performs the
+     * verification, returning `true` if the verification succeeds.
+     * @param data the data, as an `InputStream` - implicits provide convenience conversions.
+     */
     def from(data: InputStream): Boolean = {
       val sigbytes = new ByteArrayOutputStream
       val signer = createSignature(algorithm, key, provider)
@@ -261,30 +345,74 @@ trait Ciphers extends Core with StreamConversions {
       }
     }
 
+    /**
+     * Sets the algorithm to use when verifying this signature.
+     */
     def withAlgorithm(algorithm: String): VerifyOperation =
       new VerifyOperation(signature, key, Option(algorithm), provider)
 
+    /**
+     * Sets the JCE provider to use when verifying this signature.
+     */
     def withProvider(provider: OptionalProvider): VerifyOperation =
       new VerifyOperation(signature, key, algorithm, provider)
 
   }
 
   class VerifyAskForKey(signature: InputStream) {
+    /**
+     * Adds the certificate to use in verification.  Follow this statement with signature options.
+     */
     def using(cert: Certificate): VerifyOperation = this using cert.getPublicKey
+
+    /**
+     * Adds the public key to use in verification.  Follow this statement with signature options.
+     */
     def using(key: PublicKey): VerifyOperation = new VerifyOperation(signature, key)
+
+    /**
+     * Adds public key from a keypair to use in verification.  Follow this statement with signature options.
+     */
     def using(pair: KeyPair): VerifyOperation = this using pair.getPublic
   }
 
   class VerifyAskForSignature(key: PublicKey) {
+    /**
+     * Adds the signature to verify.  Follow this statement with signature options.
+     * @param signature the signature, as an `InputStream` - implicits provide conversions.
+     */
     def signature(signature: InputStream): VerifyOperation = new VerifyOperation(signature, key)
   }
 
   class VerifyAskForSignatureOrKey {
+    /**
+     * Adds the signature to verify.  Follow this statement with `using <key>`
+     * @param signature the signature, as an `InputStream` - implicits provide convenience conversions.
+     */
     def signature(signature: InputStream): VerifyAskForKey = new VerifyAskForKey(signature)
+
+    /**
+     * Adds the certificate to use in verification.  Follow this statement with `signature <stream>`.
+     */
     def using(cert: Certificate): VerifyAskForSignature = this using cert.getPublicKey
+
+    /**
+     * Adds the public key to use in verification.  Follow this statement with `signature <stream>`.
+     */
     def using(key: PublicKey): VerifyAskForSignature = new VerifyAskForSignature(key)
+
+    /**
+     * Adds the public key from a keypair to use in verification.  Follow this statement with `signature <stream>`.
+     */
     def using(pair: KeyPair): VerifyAskForSignature = this using pair.getPublic
   }
 
+  /**
+   * Starts a verification operation, returning `true` if the verification is
+   * successful, `false` otherwise.
+   *
+   * Follow this statement with either `using <key>` or `signature <stream>`.
+   *
+   */
   def verify: VerifyAskForSignatureOrKey = new VerifyAskForSignatureOrKey
 }

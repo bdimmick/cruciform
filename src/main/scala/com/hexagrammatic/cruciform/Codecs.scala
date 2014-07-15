@@ -1,7 +1,6 @@
 package com.hexagrammatic.cruciform
 
 import java.io.{InputStreamReader, InputStream, OutputStreamWriter, OutputStream}
-import java.security.Key
 import java.security.KeyPair
 import java.security.PublicKey
 import java.security.PrivateKey
