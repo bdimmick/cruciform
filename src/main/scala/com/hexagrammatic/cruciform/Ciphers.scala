@@ -51,7 +51,7 @@ trait Ciphers extends Core with StreamConversions {
     map getOrElse(key.getAlgorithm,
       throw new NoSuchAlgorithmException(s"Cipher not found for key algorithm " + key.getAlgorithm))
 
-  def createCipher(algorithm: Option[String], key: Key, provider: OptionalProvider): Cipher = {
+  private def createCipher(algorithm: Option[String], key: Key, provider: OptionalProvider): Cipher = {
     val foundAlgorithm = algorithm getOrElse algorithmForKey(key, CipherForKeyType)
 
     fromProvider[Cipher](
@@ -92,9 +92,15 @@ trait Ciphers extends Core with StreamConversions {
       out
     }
 
+    /**
+     * Sets the algorithm to use with this asymmetric encryption.
+     */
     def withAlgorithm(algorithm: String): AsymmetricEncryptOperation =
       new AsymmetricEncryptOperation(data, key, Option(algorithm), provider)
 
+    /**
+     * Sets the JCE provider to use with this asymmetric encryption.
+     */
     def withProvider(provider: OptionalProvider): AsymmetricEncryptOperation =
       new AsymmetricEncryptOperation(data, key, algorithm, provider)
   }
@@ -122,36 +128,93 @@ trait Ciphers extends Core with StreamConversions {
       (new String(bytes), iv)
     }
 
+    /**
+     * Sets the algorithm to use with this symmetric encryption.
+     */
     def withAlgorithm(algorithm: String): SymmetricEncryptOperation =
       new SymmetricEncryptOperation(data, key, Option(algorithm), provider)
 
+    /**
+     * Sets the JCE provider to use with this symmetric encryption.
+     */
     def withProvider(provider: OptionalProvider): SymmetricEncryptOperation =
       new SymmetricEncryptOperation(data, key, algorithm, provider)
   }
 
   class EncryptAskForKey(data: InputStream) {
+    /**
+     * Sets the certificate to use when performing this encryption operation and sets the operation
+     * into asymmetric mode.  Follow this statement with asymmetric encryption options.
+     */
     def using(cert: Certificate): AsymmetricEncryptOperation = this using (cert.getPublicKey)
+
+    /**
+     * Sets the public to use when performing this encryption operation and sets the operation
+     * into asymmetric mode.  Follow this statement with asymmetric encryption options.
+     */
     def using(key: PublicKey): AsymmetricEncryptOperation = new AsymmetricEncryptOperation(data, key)
+
+    /**
+     * Sets the symmetric key to use when performing this encryption operation and sets the operation
+     * into symmetric mode.  Follow this statement with symmetric encryption options.
+     */
     def using(key: SecretKey): SymmetricEncryptOperation = new SymmetricEncryptOperation(data, key)
+
+    /**
+     * Sets the public key to use when performing this encryption operation from the provided keypair
+     * and sets the into asymmetric mode.  Follow this statement with asymmetric encryption options.
+     */
     def using(pair: KeyPair): AsymmetricEncryptOperation = this using (pair.getPublic)
   }
 
   class AsymmetricEncryptAskForData(key: PublicKey) {
+    /**
+     * Sets the data to encrypt.  Follow this statement with asymmetric encryption options.
+     */
     def data(data: InputStream): AsymmetricEncryptOperation = new AsymmetricEncryptOperation(data, key)
   }
 
   class SymmetricEncryptAskForData(key: SecretKey) {
+    /**
+     * Sets the data to encrypt.  Follow this statement with symmetric encryption options.
+     */
     def data(data: InputStream): SymmetricEncryptOperation = new SymmetricEncryptOperation(data, key)
   }
 
   class EncryptAskForDataOrKey {
+    /**
+     * Sets the data to encrypt.  Follow this statement with `using <key>`.
+     */
     def data(data: InputStream): EncryptAskForKey = new EncryptAskForKey(data)
+
+    /**
+     * Sets the certificate to use when performing this encryption operation and sets the operation
+     * into asymmetric mode.  Follow this statement with `data <stream>`.
+     */
     def using(cert: Certificate):  AsymmetricEncryptAskForData = this using (cert.getPublicKey)
+
+    /**
+     * Sets the symmetric key to use when performing this encryption operation and sets the operation
+     * into symmetric mode.  Follow this statement with `data <stream>`.
+     */
     def using(key: SecretKey):  SymmetricEncryptAskForData = new  SymmetricEncryptAskForData(key)
+
+    /**
+     * Sets the public key to use when performing this encryption operation and sets the operation
+     * into asymmetric mode.  Follow this statement with `data <stream>`.
+     */
     def using(key: PublicKey):  AsymmetricEncryptAskForData = new  AsymmetricEncryptAskForData(key)
+
+    /**
+     * Sets the public key to use when performing this encryption operation from the provided keypair
+     * and sets the operation into asymmetric mode.  Follow this statement with `data <stream>`.
+     */
     def using(pair: KeyPair):  AsymmetricEncryptAskForData = this using (pair.getPublic)
   }
 
+  /**
+   * Starts an encryption operation.  Follow this statement with `data <steam>` or `using <key>`.
+   */
   def encrypt: EncryptAskForDataOrKey = new EncryptAskForDataOrKey
 
   class DecryptOperation(
@@ -162,7 +225,8 @@ trait Ciphers extends Core with StreamConversions {
       provider: OptionalProvider = DefaultProvider) extends Writeable {
 
     /**
-     * Performs the decryption and writes the ciphertext out to the provided stream.
+     * Performs the decryption and writes the plaintext out to the provided stream.
+     * Use `asBytes` or `asString` to return the plaintext as an Array[Byte] or Stirng, repsectively.
      */
     def to[T <: OutputStream](out: T): T = {
       val cipher = createCipher(algorithm, key, provider)
@@ -246,6 +310,7 @@ trait Ciphers extends Core with StreamConversions {
 
     /**
      * Completes the signing operation and writes out the signature bytes to the provided stream.
+     * Use `asBytes` or `asString` to return the plaintext as an Array[Byte] or Stirng, repsectively.
      */
     def to[T <: OutputStream](out: T): T = {
       val signer = createSignature(algorithm, key, provider)
